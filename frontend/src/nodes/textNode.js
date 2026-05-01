@@ -1,12 +1,9 @@
-// TextNode — auto-resizing text block. Width tracks the longest line of
-// text up to a 500 px cap; height grows as text wraps. Uses a hidden
-// mirror <Box> to measure natural width because `textarea.scrollWidth`
-// only reports the visible (wrapped) width.
-//
-// See BaseNode.js for the card chrome; this file owns the sizing logic.
-// Task 8.1 will populate `inputs` from {{ variable }} patterns in the text.
+// TextNode — auto-resizing text block with dynamic input handles derived
+// from {{ variable }} patterns in the text. Width tracks the longest line
+// up to a 500 px cap; a hidden mirror <Box> measures natural width because
+// `textarea.scrollWidth` only reports the visible (wrapped) width.
 
-import { useLayoutEffect, useRef, useState } from 'react';
+import { useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { FiFileText } from 'react-icons/fi';
 import { Box, Textarea } from '@chakra-ui/react';
 import { useUpdateNodeInternals } from 'reactflow';
@@ -26,6 +23,8 @@ const PADDING_X = 80;
 const PADDING_Y = 4;
 
 const DEFAULT_TEXT = '{{input}}';
+
+const VARIABLE_PATTERN = /\{\{\s*([a-zA-Z_$][a-zA-Z0-9_$]*)\s*\}\}/g;
 
 // Mirror styles MUST match the Textarea or width measurements drift.
 const MIRROR_STYLES = {
@@ -49,12 +48,50 @@ const textNodeConfig = {
 
 export const TextNode = ({ id, data, selected }) => {
   const updateNodeField = useStore((s) => s.updateNodeField);
+  const pruneStaleEdgesForNode = useStore((s) => s.pruneStaleEdgesForNode);
   const updateNodeInternals = useUpdateNodeInternals();
   const text = data?.text !== undefined ? data.text : DEFAULT_TEXT;
 
   const mirrorRef = useRef(null);
   const textareaRef = useRef(null);
   const [dims, setDims] = useState({ w: MIN_W, h: MIN_H });
+
+  const variableNames = useMemo(() => {
+    const seen = new Set();
+    const ordered = [];
+    for (const match of text.matchAll(VARIABLE_PATTERN)) {
+      const name = match[1];
+      if (!seen.has(name)) {
+        seen.add(name);
+        ordered.push(name);
+      }
+    }
+    return ordered;
+  }, [text]);
+
+  const variableKey = variableNames.join('\u0000');
+  const dynamicInputs = useMemo(
+    () => variableNames.map((name) => ({ name, label: name })),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [variableKey],
+  );
+
+  const prevVariableKey = useRef('');
+  useLayoutEffect(() => {
+    if (prevVariableKey.current === variableKey) return;
+    prevVariableKey.current = variableKey;
+
+    // Drop edges attached to handles that no longer exist, so removing
+    // {{foo}} from the text also removes any edge bound to its handle
+    // (otherwise the edge "snaps" to the next handle that appears).
+    const validHandleIds = new Set([
+      `${id}-output`,
+      ...variableNames.map((name) => `${id}-${name}`),
+    ]);
+    pruneStaleEdgesForNode(id, validHandleIds);
+
+    updateNodeInternals(id);
+  }, [variableKey, variableNames, id, updateNodeInternals, pruneStaleEdgesForNode]);
 
   useLayoutEffect(() => {
     const mirror = mirrorRef.current;
@@ -83,6 +120,7 @@ export const TextNode = ({ id, data, selected }) => {
       data={data}
       selected={selected}
       config={textNodeConfig}
+      dynamicInputs={dynamicInputs}
       containerProps={{ w: `${dims.w}px`, minW: `${MIN_W}px` }}
     >
       <Textarea

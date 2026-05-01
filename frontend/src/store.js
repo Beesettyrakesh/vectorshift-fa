@@ -51,4 +51,17 @@ export const useStore = create((set, get) => ({
         }),
       });
     },
+    // Remove edges attached to `nodeId` via a handle id that no longer exists.
+    // ReactFlow only auto-prunes edges when a whole node is deleted; nodes
+    // with dynamic handles (TextNode) must prune explicitly when their
+    // handle set changes, or stale edges re-attach when a new handle appears.
+    pruneStaleEdgesForNode: (nodeId, validHandleIds) => {
+      set({
+        edges: get().edges.filter((e) => {
+          if (e.source === nodeId && !validHandleIds.has(e.sourceHandle)) return false;
+          if (e.target === nodeId && !validHandleIds.has(e.targetHandle)) return false;
+          return true;
+        }),
+      });
+    },
   }));
