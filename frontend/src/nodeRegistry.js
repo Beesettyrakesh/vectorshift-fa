@@ -5,6 +5,9 @@ import {
   FiFileText,
   FiFilter,
   FiRepeat,
+  FiGlobe,
+  FiClock,
+  FiGitBranch,
 } from 'react-icons/fi';
 
 import { InputNode } from './nodes/inputNode';
@@ -13,6 +16,9 @@ import { LLMNode } from './nodes/llmNode';
 import { TextNode } from './nodes/textNode';
 import { FilterNode } from './nodes/filterNode';
 import { TransformNode } from './nodes/transformNode';
+import { APICallNode } from './nodes/apiCallNode';
+import { DelayNode } from './nodes/delayNode';
+import { ConditionalNode } from './nodes/conditionalNode';
 
 /**
  * @typedef {Object} NodeRegistryEntry
@@ -74,7 +80,29 @@ export const nodeRegistry = {
     accentColor: '#f97316', // nodeAccent.transform
     icon: FiRepeat,
   },
-  // apiCall, delay, conditional — added in Tasks 5.3–5.5
+  apiCall: {
+    component: APICallNode,
+    label: 'API Call',
+    category: 'integration',
+    accentColor: '#3b82f6', // nodeAccent.integration
+    icon: FiGlobe,
+  },
+  delay: {
+    component: DelayNode,
+    label: 'Delay',
+    category: 'utility',
+    accentColor: '#f59e0b', // nodeAccent.utility
+    icon: FiClock,
+  },
+  conditional: {
+    component: ConditionalNode,
+    label: 'Conditional',
+    category: 'logic',
+    accentColor: '#ef4444', // nodeAccent.logic
+    icon: FiGitBranch,
+  },
+  // All 9 node types registered: customInput, customOutput, llm, text,
+  // filter, transform, apiCall, delay, conditional.
 };
 
 /**
