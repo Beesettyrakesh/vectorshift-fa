@@ -4,6 +4,7 @@ import {
   FiCpu,
   FiFileText,
   FiFilter,
+  FiRepeat,
 } from 'react-icons/fi';
 
 import { InputNode } from './nodes/inputNode';
@@ -11,6 +12,7 @@ import { OutputNode } from './nodes/outputNode';
 import { LLMNode } from './nodes/llmNode';
 import { TextNode } from './nodes/textNode';
 import { FilterNode } from './nodes/filterNode';
+import { TransformNode } from './nodes/transformNode';
 
 /**
  * @typedef {Object} NodeRegistryEntry
@@ -65,7 +67,14 @@ export const nodeRegistry = {
     accentColor: '#f97316', // nodeAccent.transform
     icon: FiFilter,
   },
-  // transform, apiCall, delay, conditional — added in Tasks 5.2–5.5
+  transform: {
+    component: TransformNode,
+    label: 'Transform',
+    category: 'transform',
+    accentColor: '#f97316', // nodeAccent.transform
+    icon: FiRepeat,
+  },
+  // apiCall, delay, conditional — added in Tasks 5.3–5.5
 };
 
 /**
