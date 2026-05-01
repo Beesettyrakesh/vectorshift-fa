@@ -3,12 +3,14 @@ import {
   FiLogOut,
   FiCpu,
   FiFileText,
+  FiFilter,
 } from 'react-icons/fi';
 
 import { InputNode } from './nodes/inputNode';
 import { OutputNode } from './nodes/outputNode';
 import { LLMNode } from './nodes/llmNode';
 import { TextNode } from './nodes/textNode';
+import { FilterNode } from './nodes/filterNode';
 
 /**
  * @typedef {Object} NodeRegistryEntry
@@ -56,7 +58,14 @@ export const nodeRegistry = {
     accentColor: '#06b6d4', // nodeAccent.data
     icon: FiFileText,
   },
-  // filter, transform, apiCall, delay, conditional — added in Tasks 5.1–5.5
+  filter: {
+    component: FilterNode,
+    label: 'Filter',
+    category: 'transform',
+    accentColor: '#f97316', // nodeAccent.transform
+    icon: FiFilter,
+  },
+  // transform, apiCall, delay, conditional — added in Tasks 5.2–5.5
 };
 
 /**
