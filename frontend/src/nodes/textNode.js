@@ -33,7 +33,7 @@ const textNodeConfig = {
   icon: FiFileText,
   accentColor: '#06b6d4', // nodeAccent.data (cyan)
   inputs: [], // Task 8.1 will drive this dynamically from detected {{ vars }}.
-  outputs: [{ name: 'output', label: 'Output' }],
+  outputs: [{ name: 'output' }],
   fields: [], // Textarea is passed as children — BaseNode skips auto-fields.
 };
 

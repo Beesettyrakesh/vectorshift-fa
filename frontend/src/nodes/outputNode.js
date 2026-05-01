@@ -24,7 +24,7 @@ const outputNodeConfig = {
   title: 'Output',
   icon: FiLogOut,
   accentColor: '#22c55e', // nodeAccent.io (green) — matches Input
-  inputs: [{ name: 'value', label: 'Value' }],
+  inputs: [{ name: 'value' }],
   outputs: [],
   fields: [
     {

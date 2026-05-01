@@ -21,7 +21,7 @@ const inputNodeConfig = {
   icon: FiInbox,
   accentColor: '#22c55e', // nodeAccent.io (green)
   inputs: [],
-  outputs: [{ name: 'value', label: 'Value' }],
+  outputs: [{ name: 'value' }],
   fields: [
     {
       key: 'inputName',

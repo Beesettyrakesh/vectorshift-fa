@@ -26,10 +26,10 @@ const llmNodeConfig = {
   icon: FiCpu,
   accentColor: '#a855f7', // nodeAccent.ai (purple)
   inputs: [
-    { name: 'system', label: 'System' },
-    { name: 'prompt', label: 'Prompt' },
+    { name: 'system' },
+    { name: 'prompt' },
   ],
-  outputs: [{ name: 'response', label: 'Response' }],
+  outputs: [{ name: 'response' }],
   fields: [],
 };
 

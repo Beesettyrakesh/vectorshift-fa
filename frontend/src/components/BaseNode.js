@@ -212,7 +212,7 @@ export const BaseNode = ({
       </Flex>
 
       {/* ---------- Body ---------- */}
-      <Box px={3} py={3}>
+      <Box px={5} py={3}>
         {children ? (
           children
         ) : fields.length > 0 ? (
@@ -247,56 +247,24 @@ export const BaseNode = ({
 
       {/* ---------- Input (target) handles on the left ---------- */}
       {inputs.map((h, i) => (
-        <Box key={`in-${h.name}`}>
-          <Handle
-            type="target"
-            position={Position.Left}
-            id={`${id}-${h.name}`}
-            style={{ top: handleTop(i, inputs.length) }}
-          />
-          {h.label ? (
-            <Text
-              position="absolute"
-              left="12px"
-              top={handleTop(i, inputs.length)}
-              transform="translateY(-50%)"
-              fontSize="xs"
-              color="node.textMuted"
-              pointerEvents="none"
-              bg="node.bg"
-              px={1}
-            >
-              {h.label}
-            </Text>
-          ) : null}
-        </Box>
+        <Handle
+          key={`in-${h.name}`}
+          type="target"
+          position={Position.Left}
+          id={`${id}-${h.name}`}
+          style={{ top: handleTop(i, inputs.length) }}
+        />
       ))}
 
       {/* ---------- Output (source) handles on the right ---------- */}
       {outputs.map((h, i) => (
-        <Box key={`out-${h.name}`}>
-          <Handle
-            type="source"
-            position={Position.Right}
-            id={`${id}-${h.name}`}
-            style={{ top: handleTop(i, outputs.length) }}
-          />
-          {h.label ? (
-            <Text
-              position="absolute"
-              right="12px"
-              top={handleTop(i, outputs.length)}
-              transform="translateY(-50%)"
-              fontSize="xs"
-              color="node.textMuted"
-              pointerEvents="none"
-              bg="node.bg"
-              px={1}
-            >
-              {h.label}
-            </Text>
-          ) : null}
-        </Box>
+        <Handle
+          key={`out-${h.name}`}
+          type="source"
+          position={Position.Right}
+          id={`${id}-${h.name}`}
+          style={{ top: handleTop(i, outputs.length) }}
+        />
       ))}
     </Box>
   );
