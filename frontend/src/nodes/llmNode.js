@@ -1,34 +1,47 @@
-// llmNode.js
+// nodes/llmNode.js
+//
+// LLM node — represents a large-language-model invocation with two inputs
+// (System prompt, User prompt) and one output (Response). After the Task
+// 3.3 migration this is a thin wrapper that declares a BaseNodeConfig and
+// defers all rendering to `<BaseNode />`.
+//
+// Preserved invariants vs. the pre-migration implementation:
+//   - Node type key:  llm                (unchanged in nodeRegistry)
+//   - Handle ids:     `${id}-system`, `${id}-prompt`, `${id}-response`
+//                     (existing edges still resolve unchanged)
+//   - Body content:   "This is a LLM." descriptor line
+//
+// First node to exercise BaseNode's `children` escape hatch — when a node
+// has no form fields (config.fields is empty) but still wants custom body
+// content, pass that content as children and BaseNode renders it inside
+// the body box instead of auto-generating form fields.
 
-import { Handle, Position } from 'reactflow';
+import { FiCpu } from 'react-icons/fi';
+import { Text } from '@chakra-ui/react';
+import { BaseNode } from '../components/BaseNode';
 
-export const LLMNode = ({ id, data }) => {
+/** @type {import('../components/BaseNode').BaseNodeConfig} */
+const llmNodeConfig = {
+  title: 'LLM',
+  icon: FiCpu,
+  accentColor: '#a855f7', // nodeAccent.ai (purple)
+  inputs: [
+    { name: 'system', label: 'System' },
+    { name: 'prompt', label: 'Prompt' },
+  ],
+  outputs: [{ name: 'response', label: 'Response' }],
+  fields: [],
+};
 
-  return (
-    <div style={{width: 200, height: 80, border: '1px solid black'}}>
-      <Handle
-        type="target"
-        position={Position.Left}
-        id={`${id}-system`}
-        style={{top: `${100/3}%`}}
-      />
-      <Handle
-        type="target"
-        position={Position.Left}
-        id={`${id}-prompt`}
-        style={{top: `${200/3}%`}}
-      />
-      <div>
-        <span>LLM</span>
-      </div>
-      <div>
-        <span>This is a LLM.</span>
-      </div>
-      <Handle
-        type="source"
-        position={Position.Right}
-        id={`${id}-response`}
-      />
-    </div>
-  );
-}
+export const LLMNode = ({ id, data, selected }) => (
+  <BaseNode
+    id={id}
+    data={data}
+    selected={selected}
+    config={llmNodeConfig}
+  >
+    <Text fontSize="sm" color="node.textMuted">
+      This is a LLM.
+    </Text>
+  </BaseNode>
+);
