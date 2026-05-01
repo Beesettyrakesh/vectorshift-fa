@@ -1,0 +1,14 @@
+# Dependencies
+/node_modules
+/.pnp
+.pnp.js
+
+# Build output
+/build
+/dist
+
+# Testing
+/coverage
+
+# Caches
+.eslintcache
