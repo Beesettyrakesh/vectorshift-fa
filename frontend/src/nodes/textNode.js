@@ -1,50 +1,81 @@
-// nodes/textNode.js
+// TextNode — auto-resizing text block. Width tracks the longest line of
+// text up to a 500 px cap; height grows as text wraps. Uses a hidden
+// mirror <Box> to measure natural width because `textarea.scrollWidth`
+// only reports the visible (wrapped) width.
 //
-// Text node — free-form text/template block. This is the BASIC Task 3.4
-// migration only:
-//   - Card + title + handles rendered via BaseNode (consistent with other
-//     node types).
-//   - Body is a Chakra Textarea passed as `children`, bound directly to
-//     `data.text` via the store action `updateNodeField`.
-//
-// Task 7.1 will later replace the plain Textarea with an auto-resizing
-// variant that clamps width to 200-500px, and Task 8.1 will add dynamic
-// input handles generated from `{{ variable }}` patterns detected in the
-// text. Both features will sit in this wrapper — BaseNode already accepts
-// `dynamicInputs` and `containerProps` props specifically for that.
-//
-// Preserved invariants vs. the pre-migration implementation:
-//   - Node type key:  text
-//   - Handle id:      `${id}-output`
-//   - Store key:      `text`
-//   - Initial text:   defaults to "{{input}}" on a fresh drop (matches the
-//                     old `useState(data?.text || '{{input}}')` behavior).
+// See BaseNode.js for the card chrome; this file owns the sizing logic.
+// Task 8.1 will populate `inputs` from {{ variable }} patterns in the text.
 
+import { useLayoutEffect, useRef, useState } from 'react';
 import { FiFileText } from 'react-icons/fi';
-import { Textarea } from '@chakra-ui/react';
+import { Box, Textarea } from '@chakra-ui/react';
+import { useUpdateNodeInternals } from 'reactflow';
 import { BaseNode } from '../components/BaseNode';
 import { useStore } from '../store';
 
+const MIN_W = 200;
+const MAX_W = 500;
+const MIN_H = 80;
+
+// Container width = mirror.scrollWidth + PADDING_X. Breakdown:
+//   BaseNode body px={5}        : 40  (20 each side)
+//   Textarea size="sm" px       : 24  (space.3 = 12 each side)
+//   Border                      :  2
+//   Safety (sub-pixel, kerning) : 14
+const PADDING_X = 80;
+const PADDING_Y = 4;
+
 const DEFAULT_TEXT = '{{input}}';
+
+// Mirror styles MUST match the Textarea or width measurements drift.
+const MIRROR_STYLES = {
+  fontFamily: 'inherit',
+  fontSize: '14px',
+  fontWeight: 400,
+  letterSpacing: '0',
+  lineHeight: '1.4',
+  whiteSpace: 'pre',
+};
 
 /** @type {import('../components/BaseNode').BaseNodeConfig} */
 const textNodeConfig = {
   title: 'Text',
   icon: FiFileText,
-  accentColor: '#06b6d4', // nodeAccent.data (cyan)
-  inputs: [], // Task 8.1 will drive this dynamically from detected {{ vars }}.
+  accentColor: '#06b6d4',
+  inputs: [],
   outputs: [{ name: 'output' }],
-  fields: [], // Textarea is passed as children — BaseNode skips auto-fields.
+  fields: [],
 };
 
 export const TextNode = ({ id, data, selected }) => {
-  const updateNodeField = useStore((state) => state.updateNodeField);
-
-  // Read the current text from the store; fall back to the default for a
-  // freshly dropped node that has never had `text` set. Avoid writing the
-  // default into the store here — we only persist once the user edits,
-  // which keeps the "never touched" vs "user cleared it" distinction.
+  const updateNodeField = useStore((s) => s.updateNodeField);
+  const updateNodeInternals = useUpdateNodeInternals();
   const text = data?.text !== undefined ? data.text : DEFAULT_TEXT;
+
+  const mirrorRef = useRef(null);
+  const textareaRef = useRef(null);
+  const [dims, setDims] = useState({ w: MIN_W, h: MIN_H });
+
+  useLayoutEffect(() => {
+    const mirror = mirrorRef.current;
+    const textarea = textareaRef.current;
+    if (!mirror || !textarea) return;
+
+    mirror.textContent = text.length > 0 ? text : ' ';
+    const nextW = Math.min(
+      Math.max(Math.ceil(mirror.scrollWidth) + PADDING_X, MIN_W),
+      MAX_W
+    );
+
+    textarea.style.height = 'auto';
+    const nextH = Math.max(textarea.scrollHeight + PADDING_Y, MIN_H);
+
+    // Guard against no-op state updates → avoids an infinite measure loop.
+    if (nextW !== dims.w || nextH !== dims.h) {
+      setDims({ w: nextW, h: nextH });
+      updateNodeInternals(id);
+    }
+  }, [text, id, dims.w, dims.h, updateNodeInternals]);
 
   return (
     <BaseNode
@@ -52,18 +83,32 @@ export const TextNode = ({ id, data, selected }) => {
       data={data}
       selected={selected}
       config={textNodeConfig}
+      containerProps={{ w: `${dims.w}px`, minW: `${MIN_W}px` }}
     >
       <Textarea
+        ref={textareaRef}
         size="sm"
-        rows={3}
         resize="none"
         value={text}
         onChange={(e) => updateNodeField(id, 'text', e.target.value)}
+        placeholder="Enter text..."
+        h={`${dims.h}px`}
+        minH={`${MIN_H}px`}
+        spellCheck={false}
         bg="white"
         borderColor="gray.200"
         _hover={{ borderColor: 'gray.300' }}
         _focus={{ borderColor: 'brand.500', boxShadow: '0 0 0 1px #6366f1' }}
-        placeholder="Enter text..."
+      />
+      <Box
+        ref={mirrorRef}
+        position="absolute"
+        top="-9999px"
+        left="-9999px"
+        visibility="hidden"
+        aria-hidden="true"
+        pointerEvents="none"
+        sx={MIRROR_STYLES}
       />
     </BaseNode>
   );
