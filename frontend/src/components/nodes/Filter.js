@@ -7,7 +7,7 @@ const filterNodeConfig = {
   icon: FiFilter,
   accentColor: '#f97316',
   inputs: [{ name: 'input' }],
-  outputs: [{ name: 'passed' }, { name: 'rejected' }],
+  outputs: [],
   fields: [
     {
       key: 'condition',
@@ -19,6 +19,17 @@ const filterNodeConfig = {
   ],
 };
 
+// 1 output row: "passed"
+const FILTER_OUTPUT_VARS = [
+  { varName: 'passed', type: 'List', description: 'Items that matched the condition' },
+];
+
 export const FilterNode = ({ id, data, selected }) => (
-  <BaseNode id={id} data={data} selected={selected} config={filterNodeConfig} />
+  <BaseNode
+    id={id}
+    data={data}
+    selected={selected}
+    config={filterNodeConfig}
+    outputVars={FILTER_OUTPUT_VARS}
+  />
 );
