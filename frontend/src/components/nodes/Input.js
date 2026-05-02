@@ -1,5 +1,6 @@
 import { FiInbox } from 'react-icons/fi';
 import { BaseNode } from './BaseNode';
+import { getNodeOutputs } from '../../lib/variableNamespace';
 
 /** @type {import('./BaseNode').BaseNodeConfig} */
 const inputNodeConfig = {
@@ -7,15 +8,9 @@ const inputNodeConfig = {
   icon: FiInbox,
   accentColor: '#22c55e',
   inputs: [],
-  outputs: [{ name: 'value' }],
+  outputs: [],   // handled via outputVars → OutputsPanel (Task 21: dynamic)
+  // Fix 2: removed inputName — BaseNode's shared Name field covers it
   fields: [
-    {
-      key: 'inputName',
-      label: 'Name',
-      type: 'text',
-      defaultValue: '',
-      placeholder: 'Enter input name',
-    },
     {
       key: 'inputType',
       label: 'Type',
@@ -29,16 +24,15 @@ const inputNodeConfig = {
   ],
 };
 
-export const InputNode = ({ id, data, selected }) => {
-  const defaultedData = {
-    ...data,
-    inputName:
-      data?.inputName !== undefined && data.inputName !== ''
-        ? data.inputName
-        : id.replace('customInput-', 'input_'),
-  };
+// Static placeholder until Task 21 makes this dynamic
+const INPUT_OUTPUT_VARS = getNodeOutputs('customInput', 'Text');
 
-  return (
-    <BaseNode id={id} data={defaultedData} selected={selected} config={inputNodeConfig} />
-  );
-};
+export const InputNode = ({ id, data, selected }) => (
+  <BaseNode
+    id={id}
+    data={data}
+    selected={selected}
+    config={inputNodeConfig}
+    outputVars={INPUT_OUTPUT_VARS}
+  />
+);

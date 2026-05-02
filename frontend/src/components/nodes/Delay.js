@@ -1,5 +1,6 @@
 import { FiClock } from 'react-icons/fi';
 import { BaseNode } from './BaseNode';
+import { getNodeOutputs } from '../../lib/variableNamespace';
 
 /** @type {import('./BaseNode').BaseNodeConfig} */
 const delayNodeConfig = {
@@ -7,7 +8,7 @@ const delayNodeConfig = {
   icon: FiClock,
   accentColor: '#f59e0b',
   inputs: [{ name: 'input' }],
-  outputs: [{ name: 'output' }],
+  outputs: [],  // handled via outputVars → OutputsPanel
   fields: [
     {
       key: 'delayMs',
@@ -21,6 +22,15 @@ const delayNodeConfig = {
   ],
 };
 
+// Phase-2 static output vars for Delay node
+const DELAY_OUTPUT_VARS = getNodeOutputs('delay');
+
 export const DelayNode = ({ id, data, selected }) => (
-  <BaseNode id={id} data={data} selected={selected} config={delayNodeConfig} />
+  <BaseNode
+    id={id}
+    data={data}
+    selected={selected}
+    config={delayNodeConfig}
+    outputVars={DELAY_OUTPUT_VARS}
+  />
 );

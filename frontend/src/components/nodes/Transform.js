@@ -1,5 +1,6 @@
 import { FiRepeat } from 'react-icons/fi';
 import { BaseNode } from './BaseNode';
+import { getNodeOutputs } from '../../lib/variableNamespace';
 
 /** @type {import('./BaseNode').BaseNodeConfig} */
 const transformNodeConfig = {
@@ -7,7 +8,7 @@ const transformNodeConfig = {
   icon: FiRepeat,
   accentColor: '#f97316',
   inputs: [{ name: 'input' }],
-  outputs: [{ name: 'output' }],
+  outputs: [],   // handled via outputVars → OutputsPanel
   fields: [
     {
       key: 'expression',
@@ -19,6 +20,14 @@ const transformNodeConfig = {
   ],
 };
 
+const TRANSFORM_OUTPUT_VARS = getNodeOutputs('transform');
+
 export const TransformNode = ({ id, data, selected }) => (
-  <BaseNode id={id} data={data} selected={selected} config={transformNodeConfig} />
+  <BaseNode
+    id={id}
+    data={data}
+    selected={selected}
+    config={transformNodeConfig}
+    outputVars={TRANSFORM_OUTPUT_VARS}
+  />
 );

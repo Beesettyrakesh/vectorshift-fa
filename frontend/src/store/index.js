@@ -8,6 +8,7 @@ import {
   MarkerType,
 } from 'reactflow';
 import { isAutoValidateInErrorState } from '../lib/validatePipeline';
+import { cascadeRename } from '../lib/variableNamespace';
 
 const toSet = (v) => (v instanceof Set ? v : new Set(v ?? []));
 
@@ -27,6 +28,9 @@ const _scheduleAutoValidate = () => {
 export const useStore = create((set, get) => ({
   nodes: [],
   edges: [],
+  nodeIDs: {},
+
+  // ── cycle highlight ───────────────────────────────────────────────────────
   cycleNodeIds: new Set(),
   cycleEdgeKeys: new Set(),
   setCycleHighlight: (nodeIds, edgeKeys) => {
@@ -38,9 +42,13 @@ export const useStore = create((set, get) => ({
   clearCycleHighlight: () => {
     set({ cycleNodeIds: new Set(), cycleEdgeKeys: new Set() });
   },
+
+  // ── auto-validator ────────────────────────────────────────────────────────
   setAutoValidator: (fn) => {
     _autoValidateFn = fn;
   },
+
+  // ── node id generation ────────────────────────────────────────────────────
   getNodeID: (type) => {
     const newIDs = { ...get().nodeIDs };
     if (newIDs[type] === undefined) {
@@ -50,9 +58,50 @@ export const useStore = create((set, get) => ({
     set({ nodeIDs: newIDs });
     return `${type}-${newIDs[type]}`;
   },
+
+  // ── add node ──────────────────────────────────────────────────────────────
   addNode: (node) => {
-    set({ nodes: [...get().nodes, node] });
+    // Derive default nodeName from the node id: e.g. "customInput-1" → "input_1"
+    const typeAliases = {
+      customInput: 'input',
+      customOutput: 'output',
+      llm: 'llm',
+      text: 'text',
+      filter: 'filter',
+      transform: 'transform',
+      apiCall: 'api_call',
+      delay: 'delay',
+      conditional: 'conditional',
+    };
+    const alias = typeAliases[node.type] ?? node.type;
+    const idSuffix = node.id.split('-').pop(); // last segment = counter
+    const defaultName = `${alias}_${idSuffix}`;
+    const enrichedNode = {
+      ...node,
+      data: {
+        nodeName: defaultName,
+        ...node.data,
+      },
+    };
+    set({ nodes: [...get().nodes, enrichedNode] });
   },
+
+  // ── rename node (cascade) ─────────────────────────────────────────────────
+  renameNode: (nodeId, oldName, newName) => {
+    // 1. Update the node's own nodeName
+    // 2. Cascade all {{oldName.xxx}} → {{newName.xxx}} in other nodes
+    const updated = cascadeRename(
+      get().nodes.map((n) => {
+        if (n.id !== nodeId) return n;
+        return { ...n, data: { ...n.data, nodeName: newName } };
+      }),
+      oldName,
+      newName
+    );
+    set({ nodes: updated });
+  },
+
+  // ── ReactFlow change handlers ─────────────────────────────────────────────
   onNodesChange: (changes) => {
     set({ nodes: applyNodeChanges(changes, get().nodes) });
     const hasRemove = changes.some((c) => c.type === 'remove');
@@ -77,6 +126,8 @@ export const useStore = create((set, get) => ({
     });
     _scheduleAutoValidate();
   },
+
+  // ── field updates ─────────────────────────────────────────────────────────
   updateNodeField: (nodeId, fieldName, fieldValue) => {
     set({
       nodes: get().nodes.map((node) => {
@@ -87,6 +138,7 @@ export const useStore = create((set, get) => ({
       }),
     });
   },
+
   pruneStaleEdgesForNode: (nodeId, validHandleIds) => {
     set({
       edges: get().edges.filter((e) => {

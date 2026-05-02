@@ -7,15 +7,9 @@ const outputNodeConfig = {
   icon: FiLogOut,
   accentColor: '#22c55e',
   inputs: [{ name: 'value' }],
-  outputs: [],
+  outputs: [],   // Output node intentionally has no Outputs panel
+  // Fix 2: removed outputName — BaseNode's shared Name field covers it
   fields: [
-    {
-      key: 'outputName',
-      label: 'Name',
-      type: 'text',
-      defaultValue: '',
-      placeholder: 'Enter output name',
-    },
     {
       key: 'outputType',
       label: 'Type',
@@ -29,16 +23,6 @@ const outputNodeConfig = {
   ],
 };
 
-export const OutputNode = ({ id, data, selected }) => {
-  const defaultedData = {
-    ...data,
-    outputName:
-      data?.outputName !== undefined && data.outputName !== ''
-        ? data.outputName
-        : id.replace('customOutput-', 'output_'),
-  };
-
-  return (
-    <BaseNode id={id} data={defaultedData} selected={selected} config={outputNodeConfig} />
-  );
-};
+export const OutputNode = ({ id, data, selected }) => (
+  <BaseNode id={id} data={data} selected={selected} config={outputNodeConfig} />
+);

@@ -1,5 +1,6 @@
 import { FiGitBranch } from 'react-icons/fi';
 import { BaseNode } from './BaseNode';
+import { getNodeOutputs } from '../../lib/variableNamespace';
 
 /** @type {import('./BaseNode').BaseNodeConfig} */
 const conditionalNodeConfig = {
@@ -7,7 +8,7 @@ const conditionalNodeConfig = {
   icon: FiGitBranch,
   accentColor: '#ef4444',
   inputs: [{ name: 'input' }],
-  outputs: [{ name: 'true' }, { name: 'false' }],
+  outputs: [],   // handled via outputVars → OutputsPanel
   fields: [
     {
       key: 'condition',
@@ -19,6 +20,14 @@ const conditionalNodeConfig = {
   ],
 };
 
+const CONDITIONAL_OUTPUT_VARS = getNodeOutputs('conditional');
+
 export const ConditionalNode = ({ id, data, selected }) => (
-  <BaseNode id={id} data={data} selected={selected} config={conditionalNodeConfig} />
+  <BaseNode
+    id={id}
+    data={data}
+    selected={selected}
+    config={conditionalNodeConfig}
+    outputVars={CONDITIONAL_OUTPUT_VARS}
+  />
 );

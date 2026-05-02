@@ -1,5 +1,6 @@
 import { FiGlobe } from 'react-icons/fi';
 import { BaseNode } from './BaseNode';
+import { getNodeOutputs } from '../../lib/variableNamespace';
 
 /** @type {import('./BaseNode').BaseNodeConfig} */
 const apiCallNodeConfig = {
@@ -7,7 +8,7 @@ const apiCallNodeConfig = {
   icon: FiGlobe,
   accentColor: '#3b82f6',
   inputs: [{ name: 'url' }, { name: 'body' }],
-  outputs: [{ name: 'response' }, { name: 'error' }],
+  outputs: [],  // handled via outputVars → OutputsPanel
   fields: [
     {
       key: 'method',
@@ -31,6 +32,15 @@ const apiCallNodeConfig = {
   ],
 };
 
+// Phase-2 static output vars for API Call node
+const API_OUTPUT_VARS = getNodeOutputs('apiCall');
+
 export const APICallNode = ({ id, data, selected }) => (
-  <BaseNode id={id} data={data} selected={selected} config={apiCallNodeConfig} />
+  <BaseNode
+    id={id}
+    data={data}
+    selected={selected}
+    config={apiCallNodeConfig}
+    outputVars={API_OUTPUT_VARS}
+  />
 );
