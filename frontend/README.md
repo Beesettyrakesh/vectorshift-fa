@@ -1,70 +1,109 @@
-# Getting Started with Create React App
+# Frontend — VectorShift Pipeline Builder
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+React 18 + ReactFlow + Chakra UI workspace.
 
-## Available Scripts
+> **Full documentation** (features, demo walkthrough, API reference, node
+> catalogue) is in the [project root README](../README.md).
 
-In the project directory, you can run:
+---
 
-### `npm start`
+## Setup
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+```bash
+npm install       # install dependencies (one-time)
+npm start         # dev server → http://localhost:3000
+npm run build     # production build → ./build/
+```
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+The frontend expects the FastAPI backend to be running on
+`http://localhost:8000`. Start it first:
 
-### `npm test`
+```bash
+cd ../backend
+source .venv/bin/activate
+uvicorn main:app --reload
+```
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+---
 
-### `npm run build`
+## Key Concepts
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+### Variable References
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+Any field that uses `VariableTagInput` (LLM prompts, Filter, Transform,
+API Call, Conditional, Text) supports the `{{nodeName.varName}}` syntax:
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+- Type `{{` or click the `+` button → a picker opens
+- **Stage 1** — pick a source node from the canvas
+- **Stage 2** — pick one of that node's output variables
+- The reference is inserted as a **chip**
+- A **dashed gray edge** appears on the canvas automatically
 
-### `npm run eject`
+### Node Names
 
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
+Every node has a **Name** field at the top. The name is the namespace for
+its outputs. Rename a node and all `{{oldName.var}}` references across the
+canvas update automatically.
 
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+### Run Button
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
+Located in the toolbar (top-right). Disabled when:
+- No nodes on the canvas
+- Nodes exist but no edges between them
 
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
+Clicking **Run** posts the pipeline to the backend and shows a modal with
+`num_nodes`, `num_edges`, and `Is DAG`.
 
-## Learn More
+### Status Badge
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+The toolbar also shows a live validation badge that updates within 300ms
+after any connection or variable reference change:
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+| Badge | Meaning |
+|-------|---------|
+| `Idle` | Empty canvas or no edges |
+| `Validating…` | POST in-flight |
+| `✓ Valid DAG` | Acyclic graph |
+| `⚠ Cycle Detected` | Cycle found — nodes/edges highlighted red |
+| `✕ Backend Error` | Backend unreachable |
 
-### Code Splitting
+---
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
+## Source Layout
 
-### Analyzing the Bundle Size
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
-
-### Making a Progressive Web App
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
-
-### Advanced Configuration
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
-
-### Deployment
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
-
-### `npm run build` fails to minify
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+```
+src/
+├── App.js                      Root layout (Toolbar + Canvas)
+├── index.js                    ChakraProvider + ReactFlowProvider
+├── components/
+│   ├── canvas/Canvas.js        Drop canvas, edge merge + cycle styling
+│   ├── controls/
+│   │   ├── RunButton.js        Run button + result modal
+│   │   ├── ValidationStatus.js Live status badge
+│   │   ├── VariableTagInput.js Chip input with two-stage picker
+│   │   ├── VariableTextInput.js Single-line variant
+│   │   ├── VariableTextarea.js Multi-line variant
+│   │   └── VariablePickerPopover.js Picker popover (stage 1 + 2)
+│   ├── layout/
+│   │   ├── Toolbar.js          Left palette
+│   │   └── DraggableNode.js    Drag source chip
+│   └── nodes/
+│       ├── BaseNode.js         Shared shell used by all 9 node types
+│       ├── OutputsPanel.js     Right-side outputs list + handles
+│       ├── registry.js         nodeTypes map + toolbarEntries
+│       ├── Input.js            Input node (Text / File)
+│       ├── Output.js           Output node
+│       ├── LLM.js              LLM node (model, system prompt, prompt)
+│       ├── Text.js             Text node (auto-resize + dynamic handles)
+│       ├── Filter.js           Filter node (list + function + expression)
+│       ├── Transform.js        Transform node (15 types)
+│       ├── ApiCall.js          API Call node (method + URL + body)
+│       ├── Delay.js            Delay node (ms)
+│       └── Conditional.js      Conditional node (15 operators)
+├── lib/
+│   ├── variableNamespace.js    buildNamespace, validateRef, cascadeRename
+│   └── validatePipeline.js     fetch helper, auto-validate, status pub/sub
+├── store/index.js              Zustand store
+├── styles/index.css            ReactFlow handle + edge overrides
+└── theme/index.js              Chakra UI design tokens
+```
