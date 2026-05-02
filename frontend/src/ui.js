@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback, useMemo } from 'react';
 import ReactFlow, { Controls, Background, MiniMap } from 'reactflow';
 import { shallow } from 'zustand/shallow';
 import { Box } from '@chakra-ui/react';
@@ -14,6 +14,7 @@ const proOptions = { hideAttribution: true };
 const selector = (state) => ({
   nodes: state.nodes,
   edges: state.edges,
+  cycleEdgeKeys: state.cycleEdgeKeys,
   getNodeID: state.getNodeID,
   addNode: state.addNode,
   onNodesChange: state.onNodesChange,
@@ -21,18 +22,40 @@ const selector = (state) => ({
   onConnect: state.onConnect,
 });
 
+// Red stroke applied to edges whose "source>target" key is in cycleEdgeKeys
+// (Req 8.7). Kept as a module constant so the JSX stays clean.
+const CYCLE_EDGE_STYLE = { stroke: '#ef4444', strokeWidth: 2.5 };
+
 export const PipelineUI = () => {
   const reactFlowWrapper = useRef(null);
   const [reactFlowInstance, setReactFlowInstance] = useState(null);
   const {
     nodes,
     edges,
+    cycleEdgeKeys,
     getNodeID,
     addNode,
     onNodesChange,
     onEdgesChange,
     onConnect,
   } = useStore(selector, shallow);
+
+  // Derive styled edges only when `edges` or `cycleEdgeKeys` change.
+  // Each edge whose "source>target" key is in the cycle set gets a red
+  // stroke + a marker className we can target from CSS if we ever want
+  // to add an animation. Clean edges pass through unchanged.
+  const styledEdges = useMemo(() => {
+    if (cycleEdgeKeys.size === 0) return edges;
+    return edges.map((e) => {
+      const key = `${e.source}>${e.target}`;
+      if (!cycleEdgeKeys.has(key)) return e;
+      return {
+        ...e,
+        style: { ...(e.style ?? {}), ...CYCLE_EDGE_STYLE },
+        className: `${e.className ?? ''} react-flow__edge--cycle`.trim(),
+      };
+    });
+  }, [edges, cycleEdgeKeys]);
 
   const getInitNodeData = (nodeID, type) => ({ id: nodeID, nodeType: type });
 
@@ -81,14 +104,14 @@ export const PipelineUI = () => {
     <Box
       ref={reactFlowWrapper}
       w="100%"
-      h="calc(100vh - 64px - 72px)" /* full viewport minus toolbar (~64) and submit bar (~72) */
+      h="calc(100vh - 64px)" /* full viewport minus toolbar; Run moved into the toolbar so no footer remains */
       minH="500px"
       bg="canvas.bg"
       position="relative"
     >
       <ReactFlow
         nodes={nodes}
-        edges={edges}
+        edges={styledEdges}
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
         onConnect={onConnect}

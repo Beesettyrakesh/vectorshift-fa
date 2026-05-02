@@ -1,12 +1,13 @@
-// submit.js — posts the pipeline to /pipelines/parse and shows the result
-// in a centered modal (success / cycle / error), dismissed by OK, ×, the
-// overlay, or Escape.
+// RunButton.js — the "Run" control in the top-right of the toolbar.
+//
+// POSTs the pipeline to /pipelines/parse (via validatePipeline) and shows
+// the result in a centered modal. Cycle highlighting on the canvas
+// (Req 8.6–8.8) is handled inside validatePipeline() as a side-effect.
 
 import { useState } from 'react';
 import {
   Box,
   Button,
-  Flex,
   Modal,
   ModalBody,
   ModalCloseButton,
@@ -19,9 +20,8 @@ import {
   useDisclosure,
 } from '@chakra-ui/react';
 import { shallow } from 'zustand/shallow';
-import { useStore } from './store';
-
-const PARSE_URL = 'http://localhost:8000/pipelines/parse';
+import { useStore } from '../store';
+import { validatePipeline, clearCycleHighlight } from '../validatePipeline';
 
 const selector = (s) => ({ nodes: s.nodes, edges: s.edges });
 
@@ -31,31 +31,17 @@ const STATUS_COLOR = {
   error: 'red.400',
 };
 
-export const SubmitButton = () => {
+export const RunButton = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [result, setResult] = useState(null); // { title, status, lines[], hint? }
   const { isOpen, onOpen, onClose } = useDisclosure();
   const { nodes, edges } = useStore(selector, shallow);
 
-  const onSubmit = async () => {
+  const onRun = async () => {
     setIsLoading(true);
     try {
-      const payload = {
-        nodes: nodes.map((n) => ({ id: n.id, type: n.type, data: n.data })),
-        edges: edges.map((e) => ({ source: e.source, target: e.target })),
-      };
-
-      const res = await fetch(PARSE_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      });
-
-      if (!res.ok) {
-        throw new Error(`Server responded with ${res.status}`);
-      }
-
-      const { num_nodes, num_edges, is_dag } = await res.json();
+      const data = await validatePipeline(nodes, edges);
+      const { num_nodes, num_edges, is_dag } = data;
 
       setResult({
         title: is_dag ? 'Pipeline Parsed' : 'Cycle Detected',
@@ -67,11 +53,13 @@ export const SubmitButton = () => {
         ],
         hint: is_dag
           ? null
-          : 'Your pipeline contains a cycle and cannot be executed as a DAG.',
+          : 'The red-highlighted nodes and edges form a cycle and cannot be executed as a DAG.',
       });
     } catch (err) {
+      // Don't leave stale red highlighting if the backend is unreachable.
+      clearCycleHighlight();
       setResult({
-        title: 'Submit Failed',
+        title: 'Run Failed',
         status: 'error',
         lines: [err?.message ?? 'Could not reach the backend.'],
         hint: 'Make sure the backend is running on http://localhost:8000.',
@@ -84,27 +72,16 @@ export const SubmitButton = () => {
 
   return (
     <>
-      <Flex
-        as="footer"
-        justify="center"
-        align="center"
-        py={4}
-        px={6}
-        bg="toolbar.bg"
-        borderTopWidth="1px"
-        borderTopColor="gray.200"
+      <Button
+        colorScheme="brand"
+        size="sm"
+        onClick={onRun}
+        isLoading={isLoading}
+        loadingText="Running…"
+        minW="80px"
       >
-        <Button
-          colorScheme="brand"
-          size="lg"
-          onClick={onSubmit}
-          isLoading={isLoading}
-          loadingText="Submitting..."
-          minW="200px"
-        >
-          Submit Pipeline
-        </Button>
-      </Flex>
+        Run
+      </Button>
 
       <Modal isOpen={isOpen} onClose={onClose} isCentered size="sm">
         <ModalOverlay />

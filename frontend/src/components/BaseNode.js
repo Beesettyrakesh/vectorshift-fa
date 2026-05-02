@@ -175,23 +175,47 @@ export const BaseNode = ({
   containerProps,
 }) => {
   const updateNodeField = useStore((state) => state.updateNodeField);
+  // Req 8.6: if this node's id is in the cycle set, draw a red border +
+  // elevated red-tinted shadow. Selector returns a boolean so this
+  // component only re-renders when its own membership flips.
+  const isInCycle = useStore((state) => state.cycleNodeIds.has(id));
 
   const inputs = dynamicInputs ?? config.inputs ?? [];
   const outputs = config.outputs ?? [];
   const fields = config.fields ?? [];
   const IconComponent = config.icon;
 
+  // Cycle styling takes precedence over `selected` to make validation
+  // errors unmissable even when the node is focused.
+  const borderColor = isInCycle
+    ? 'red.400'
+    : selected
+    ? 'brand.500'
+    : 'node.border';
+  const borderWidth = isInCycle ? '2px' : '1px';
+  const boxShadow = isInCycle
+    ? '0 0 0 3px rgba(239, 68, 68, 0.25), 0 4px 12px rgba(239, 68, 68, 0.15)'
+    : selected
+    ? 'nodeSelected'
+    : 'node';
+
   return (
     <Box
       position="relative"
       minW="220px"
       bg="node.bg"
-      borderWidth="1px"
-      borderColor={selected ? 'brand.500' : 'node.border'}
+      borderWidth={borderWidth}
+      borderColor={borderColor}
       borderRadius="node"
-      boxShadow={selected ? 'nodeSelected' : 'node'}
+      boxShadow={boxShadow}
       transition="box-shadow 0.15s ease, border-color 0.15s ease"
-      _hover={{ boxShadow: selected ? 'nodeSelected' : 'nodeHover' }}
+      _hover={{
+        boxShadow: isInCycle
+          ? boxShadow
+          : selected
+          ? 'nodeSelected'
+          : 'nodeHover',
+      }}
       overflow="visible"
       {...containerProps}
     >
