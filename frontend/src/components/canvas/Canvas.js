@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback, useMemo } from 'react';
-import ReactFlow, { Controls, Background, MiniMap } from 'reactflow';
+import ReactFlow, { Controls, Background, MiniMap, MarkerType } from 'reactflow';
 import { shallow } from 'zustand/shallow';
 import { Box } from '@chakra-ui/react';
 
@@ -14,6 +14,7 @@ const proOptions = { hideAttribution: true };
 const selector = (state) => ({
   nodes: state.nodes,
   edges: state.edges,
+  autoEdges: state.autoEdges,
   cycleEdgeKeys: state.cycleEdgeKeys,
   getNodeID: state.getNodeID,
   addNode: state.addNode,
@@ -30,6 +31,7 @@ export const PipelineUI = () => {
   const {
     nodes,
     edges,
+    autoEdges,
     cycleEdgeKeys,
     getNodeID,
     addNode,
@@ -39,17 +41,38 @@ export const PipelineUI = () => {
   } = useStore(selector, shallow);
 
   const styledEdges = useMemo(() => {
-    if (cycleEdgeKeys.size === 0) return edges;
-    return edges.map((e) => {
+    // 1. Style real edges (cycle highlight)
+    const realStyled = edges.map((e) => {
       const key = `${e.source}>${e.target}`;
-      if (!cycleEdgeKeys.has(key)) return e;
+      if (cycleEdgeKeys.size === 0 || !cycleEdgeKeys.has(key)) return e;
       return {
         ...e,
         style: { ...(e.style ?? {}), ...CYCLE_EDGE_STYLE },
         className: `${e.className ?? ''} react-flow__edge--cycle`.trim(),
       };
     });
-  }, [edges, cycleEdgeKeys]);
+
+    // 2. Style auto-edges — apply cycle highlight where applicable,
+    //    skip any whose source→target pair already has a real edge.
+    const realPairs = new Set(edges.map((e) => `${e.source}>${e.target}`));
+    const styledAuto = autoEdges
+      .filter((ae) => !realPairs.has(`${ae.source}>${ae.target}`))
+      .map((ae) => {
+        const key = `${ae.source}>${ae.target}`;
+        if (cycleEdgeKeys.size > 0 && cycleEdgeKeys.has(key)) {
+          return {
+            ...ae,
+            animated: true,
+            markerEnd: { type: MarkerType.Arrow, height: '20px', width: '20px' },
+            style: { ...(ae.style ?? {}), ...CYCLE_EDGE_STYLE, strokeDasharray: undefined },
+            className: `${ae.className ?? ''} react-flow__edge--cycle`.trim(),
+          };
+        }
+        return ae;
+      });
+
+    return [...realStyled, ...styledAuto];
+  }, [edges, autoEdges, cycleEdgeKeys]);
 
   const getInitNodeData = (nodeID, type) => ({ id: nodeID, nodeType: type });
 

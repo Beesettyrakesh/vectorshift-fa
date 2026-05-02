@@ -1,16 +1,16 @@
 import { useEffect, useState } from 'react';
-import { Box, HStack, Spinner, Text } from '@chakra-ui/react';
+import { Badge, HStack, Spinner } from '@chakra-ui/react';
 import {
   getAutoValidateStatus,
   subscribeAutoValidateStatus,
 } from '../../lib/validatePipeline';
 
 const STATUS_META = {
-  idle: { color: 'gray.400', label: 'Idle' },
-  validating: { color: 'blue.400', label: 'Validating…' },
-  dag: { color: 'green.400', label: '✓ DAG' },
-  cycle: { color: 'orange.400', label: '⚠ Cycle detected' },
-  error: { color: 'red.400', label: '✕ Backend unreachable' },
+  idle:       { colorScheme: 'gray',   label: 'Idle'                },
+  validating: { colorScheme: 'blue',   label: 'Validating…'         },
+  dag:        { colorScheme: 'green',  label: '✓ Valid DAG'         },
+  cycle:      { colorScheme: 'orange', label: '⚠ Cycle Detected'   },
+  error:      { colorScheme: 'red',    label: '✕ Backend Error'     },
 };
 
 export const ValidationStatus = () => {
@@ -22,13 +22,20 @@ export const ValidationStatus = () => {
   const isValidating = status === 'validating';
 
   return (
-    <HStack spacing={2} fontSize="xs" color="gray.600" aria-live="polite">
-      {isValidating ? (
-        <Spinner size="xs" color={meta.color} />
-      ) : (
-        <Box w={2} h={2} borderRadius="full" bg={meta.color} />
-      )}
-      <Text>{meta.label}</Text>
+    <HStack spacing={2} aria-live="polite">
+      {isValidating && <Spinner size="xs" color={`${meta.colorScheme}.500`} />}
+      <Badge
+        colorScheme={meta.colorScheme}
+        variant="solid"
+        fontSize="xs"
+        fontWeight="700"
+        px={2}
+        py={0.5}
+        borderRadius="md"
+        letterSpacing="0.02em"
+      >
+        {meta.label}
+      </Badge>
     </HStack>
   );
 };

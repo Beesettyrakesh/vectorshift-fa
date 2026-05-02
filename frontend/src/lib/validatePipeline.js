@@ -58,19 +58,25 @@ const _setStatus = (next) => {
 
 const _runAutoValidate = async () => {
   const state = useStore.getState();
-  if (state.nodes.length === 0 && state.edges.length === 0) {
+  // Merge autoEdges so cycle detection sees variable-reference dependencies too
+  const allEdges = [...state.edges, ...(state.autoEdges ?? [])];
+  // Idle when canvas is empty OR nodes exist but nothing is connected yet
+  if (state.nodes.length === 0 || allEdges.length === 0) {
     clearCycleHighlight();
     _setStatus('idle');
     return;
   }
   _setStatus('validating');
   try {
-    const data = await validatePipeline(state.nodes, state.edges);
+    const data = await validatePipeline(state.nodes, allEdges);
     _setStatus(data.is_dag ? 'dag' : 'cycle');
   } catch (e) {
     _setStatus('error');
   }
 };
+
+// Export so RunButton can reuse it (keeps status chip in sync)
+export const runAutoValidate = _runAutoValidate;
 
 export const registerAutoValidator = () => {
   useStore.getState().setAutoValidator(_runAutoValidate);

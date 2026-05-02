@@ -77,9 +77,19 @@ export const VariableTagInput = ({
 
   // Live namespace for validation
   const nodes = useStore((s) => s.nodes);
+  const setAutoEdges = useStore((s) => s.setAutoEdges);
   const namespace = useMemo(() => buildNamespace(nodes), [nodes]);
 
   const tokens = useMemo(() => tokenize(value ?? ''), [value]);
+
+  // Push valid refs as auto-edges whenever tokens change
+  useMemo(() => {
+    const validRefs = tokens
+      .filter((t) => t.kind === 'ref' && validateRef(namespace, t.nodeName, t.varName))
+      .map((t) => ({ sourceNodeName: t.nodeName, sourceVarName: t.varName }));
+    setAutoEdges(nodeId, fieldKey, validRefs);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tokens, namespace, nodeId, fieldKey]);
 
   const lastRefIndex = useMemo(() => {
     let idx = -1;

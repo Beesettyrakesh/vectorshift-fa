@@ -15,9 +15,7 @@ import {
 } from '@chakra-ui/react';
 import { shallow } from 'zustand/shallow';
 import { useStore } from '../../store/index';
-import { validatePipeline, clearCycleHighlight } from '../../lib/validatePipeline';
-
-const selector = (s) => ({ nodes: s.nodes, edges: s.edges });
+import { runAutoValidate, clearCycleHighlight, getAutoValidateStatus } from '../../lib/validatePipeline';
 
 const STATUS_COLOR = {
   success: 'green.400',
@@ -25,29 +23,55 @@ const STATUS_COLOR = {
   error: 'red.400',
 };
 
+const selector = (s) => ({
+  nodes: s.nodes,
+  edges: s.edges,
+  autoEdges: s.autoEdges ?? [],
+});
+
 export const RunButton = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [result, setResult] = useState(null);
   const { isOpen, onOpen, onClose } = useDisclosure();
-  const { nodes, edges } = useStore(selector, shallow);
+  const { nodes, edges, autoEdges } = useStore(selector, shallow);
+
+  // Disabled when canvas is empty or no connections exist (real or auto)
+  const allEdgeCount = edges.length + autoEdges.length;
+  const canRun = nodes.length > 0 && allEdgeCount > 0;
+  const disabledTitle =
+    nodes.length === 0
+      ? 'Add nodes to the canvas first'
+      : allEdgeCount === 0
+      ? 'Connect at least two nodes before running'
+      : undefined;
 
   const onRun = async () => {
     setIsLoading(true);
     try {
-      const data = await validatePipeline(nodes, edges);
-      const { num_nodes, num_edges, is_dag } = data;
-
+      // runAutoValidate reads store.edges + store.autoEdges internally
+      // and also updates the status chip
+      await runAutoValidate();
+      const status = getAutoValidateStatus();
+      const isDAG = status === 'dag';
+      const state = useStore.getState();
+      const allEdges = [...state.edges, ...(state.autoEdges ?? [])];
       setResult({
-        title: is_dag ? 'Pipeline Parsed' : 'Cycle Detected',
-        status: is_dag ? 'success' : 'warning',
-        lines: [
-          `Nodes: ${num_nodes}`,
-          `Edges: ${num_edges}`,
-          `Is DAG: ${is_dag ? 'Yes' : 'No'}`,
-        ],
-        hint: is_dag
-          ? null
-          : 'The red-highlighted nodes and edges form a cycle and cannot be executed as a DAG.',
+        title: isDAG ? 'Pipeline Parsed' : status === 'error' ? 'Run Failed' : 'Cycle Detected',
+        status: isDAG ? 'success' : status === 'error' ? 'error' : 'warning',
+        lines:
+          status !== 'error'
+            ? [
+                `Nodes: ${state.nodes.length}`,
+                `Edges: ${allEdges.length}`,
+                `Is DAG: ${isDAG ? 'Yes' : 'No'}`,
+              ]
+            : ['Could not reach the backend.'],
+        hint:
+          status === 'cycle'
+            ? 'The red-highlighted nodes and edges form a cycle and cannot be executed as a DAG.'
+            : status === 'error'
+            ? 'Make sure the backend is running on http://localhost:8000.'
+            : null,
       });
     } catch (err) {
       clearCycleHighlight();
@@ -70,8 +94,10 @@ export const RunButton = () => {
         size="sm"
         onClick={onRun}
         isLoading={isLoading}
+        isDisabled={!canRun}
         loadingText="Running…"
         minW="80px"
+        title={disabledTitle}
       >
         Run
       </Button>

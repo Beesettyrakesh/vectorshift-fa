@@ -30,6 +30,46 @@ export const useStore = create((set, get) => ({
   edges: [],
   nodeIDs: {},
 
+  // ── auto-edges (visual only — never sent to backend) ─────────────────────
+  autoEdges: [],
+  setAutoEdges: (nodeId, fieldKey, refs) => {
+    // refs = [{ sourceNodeName, sourceVarName }] for valid {{node.var}} chips
+    // Build unique edge entries for this (nodeId, fieldKey) combo, then merge
+    // with all auto-edges from OTHER fields/nodes.
+    const prev = get().autoEdges.filter(
+      (e) => !(e._nodeId === nodeId && e._fieldKey === fieldKey)
+    );
+    const nodes = get().nodes;
+    // Resolve sourceNodeName → nodeId via nodeName
+    const nameToId = {};
+    nodes.forEach((n) => { if (n.data?.nodeName) nameToId[n.data.nodeName] = n.id; });
+
+    const next = refs
+      .map((r) => {
+        const sourceId = nameToId[r.sourceNodeName];
+        if (!sourceId || sourceId === nodeId) return null;
+        return {
+          id: `auto__${sourceId}__${r.sourceVarName}__${nodeId}__${fieldKey}`,
+          source: sourceId,
+          target: nodeId,
+          sourceHandle: `${sourceId}-${r.sourceVarName}`,
+          targetHandle: `${nodeId}-input`,
+          type: 'smoothstep',
+          _nodeId: nodeId,
+          _fieldKey: fieldKey,
+          // visual marker
+          style: { stroke: '#94a3b8', strokeDasharray: '5 4', strokeWidth: 1.5, opacity: 0.7 },
+          animated: false,
+          selectable: false,
+          deletable: false,
+        };
+      })
+      .filter(Boolean);
+    set({ autoEdges: [...prev, ...next] });
+    // Auto-validate so cycle detection fires immediately when refs change
+    _scheduleAutoValidate();
+  },
+
   // ── cycle highlight ───────────────────────────────────────────────────────
   cycleNodeIds: new Set(),
   cycleEdgeKeys: new Set(),
