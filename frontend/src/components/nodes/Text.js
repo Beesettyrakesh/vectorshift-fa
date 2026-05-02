@@ -102,6 +102,7 @@ export const TextNode = ({ id, data, selected }) => {
       config={textNodeConfig}
       dynamicInputs={dynamicInputs}
       outputVars={TEXT_OUTPUT_VARS}
+      outputHandleCount={1}
       containerProps={{ w: `${nodeW}px`, minW: `${MIN_W}px` }}
     >
       <Textarea

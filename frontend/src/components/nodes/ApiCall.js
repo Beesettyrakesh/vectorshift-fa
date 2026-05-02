@@ -42,5 +42,6 @@ export const APICallNode = ({ id, data, selected }) => (
     selected={selected}
     config={apiCallNodeConfig}
     outputVars={API_OUTPUT_VARS}
+    outputHandleCount={1}
   />
 );

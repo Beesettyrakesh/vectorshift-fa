@@ -32,5 +32,6 @@ export const DelayNode = ({ id, data, selected }) => (
     selected={selected}
     config={delayNodeConfig}
     outputVars={DELAY_OUTPUT_VARS}
+    outputHandleCount={1}
   />
 );

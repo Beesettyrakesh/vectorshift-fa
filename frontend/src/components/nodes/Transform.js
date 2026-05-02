@@ -29,5 +29,6 @@ export const TransformNode = ({ id, data, selected }) => (
     selected={selected}
     config={transformNodeConfig}
     outputVars={TRANSFORM_OUTPUT_VARS}
+    outputHandleCount={1}
   />
 );

@@ -29,5 +29,6 @@ export const ConditionalNode = ({ id, data, selected }) => (
     selected={selected}
     config={conditionalNodeConfig}
     outputVars={CONDITIONAL_OUTPUT_VARS}
+    outputHandleCount={2}
   />
 );

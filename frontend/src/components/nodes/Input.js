@@ -1,6 +1,7 @@
+import { useEffect } from 'react';
 import { FiInbox } from 'react-icons/fi';
+import { useUpdateNodeInternals } from 'reactflow';
 import { BaseNode } from './BaseNode';
-import { getNodeOutputs } from '../../lib/variableNamespace';
 
 /** @type {import('./BaseNode').BaseNodeConfig} */
 const inputNodeConfig = {
@@ -8,8 +9,7 @@ const inputNodeConfig = {
   icon: FiInbox,
   accentColor: '#22c55e',
   inputs: [],
-  outputs: [],   // handled via outputVars → OutputsPanel (Task 21: dynamic)
-  // Fix 2: removed inputName — BaseNode's shared Name field covers it
+  outputs: [],
   fields: [
     {
       key: 'inputType',
@@ -24,15 +24,35 @@ const inputNodeConfig = {
   ],
 };
 
-// Static placeholder until Task 21 makes this dynamic
-const INPUT_OUTPUT_VARS = getNodeOutputs('customInput', 'Text');
+const TEXT_OUTPUT_VARS = [
+  { varName: 'text', type: 'Text', description: 'The text that was provided' },
+];
 
-export const InputNode = ({ id, data, selected }) => (
-  <BaseNode
-    id={id}
-    data={data}
-    selected={selected}
-    config={inputNodeConfig}
-    outputVars={INPUT_OUTPUT_VARS}
-  />
-);
+const FILE_OUTPUT_VARS = [
+  { varName: 'filename',       type: 'Text', description: 'Original file name'         },
+  { varName: 'processed_text', type: 'Text', description: 'Extracted text content'     },
+  { varName: 'list',           type: 'List', description: 'Lines split into a list'    },
+];
+
+export const InputNode = ({ id, data, selected }) => {
+  const updateNodeInternals = useUpdateNodeInternals();
+  const inputType = data?.inputType ?? 'Text';
+
+  // Re-flow handle positions whenever the type changes
+  useEffect(() => {
+    updateNodeInternals(id);
+  }, [id, inputType, updateNodeInternals]);
+
+  const outputVars = inputType === 'File' ? FILE_OUTPUT_VARS : TEXT_OUTPUT_VARS;
+
+  return (
+    <BaseNode
+      id={id}
+      data={data}
+      selected={selected}
+      config={inputNodeConfig}
+      outputVars={outputVars}
+      outputHandleCount={1}
+    />
+  );
+};
