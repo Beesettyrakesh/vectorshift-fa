@@ -117,6 +117,7 @@ export const VariablePickerPopover = ({ isOpen, onClose, nodeId, onInsert, child
       isOpen={isOpen}
       onClose={handleClose}
       placement="bottom-start"
+      strategy="fixed"
       closeOnBlur
       isLazy
     >
