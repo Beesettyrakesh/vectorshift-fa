@@ -3,8 +3,8 @@ import ReactFlow, { Controls, Background, MiniMap } from 'reactflow';
 import { shallow } from 'zustand/shallow';
 import { Box } from '@chakra-ui/react';
 
-import { useStore } from './store';
-import { nodeTypes } from './nodeRegistry';
+import { useStore } from '../../store/index';
+import { nodeTypes } from '../nodes/registry';
 
 import 'reactflow/dist/style.css';
 
@@ -22,8 +22,6 @@ const selector = (state) => ({
   onConnect: state.onConnect,
 });
 
-// Red stroke applied to edges whose "source>target" key is in cycleEdgeKeys
-// (Req 8.7). Kept as a module constant so the JSX stays clean.
 const CYCLE_EDGE_STYLE = { stroke: '#ef4444', strokeWidth: 2.5 };
 
 export const PipelineUI = () => {
@@ -40,10 +38,6 @@ export const PipelineUI = () => {
     onConnect,
   } = useStore(selector, shallow);
 
-  // Derive styled edges only when `edges` or `cycleEdgeKeys` change.
-  // Each edge whose "source>target" key is in the cycle set gets a red
-  // stroke + a marker className we can target from CSS if we ever want
-  // to add an animation. Clean edges pass through unchanged.
   const styledEdges = useMemo(() => {
     if (cycleEdgeKeys.size === 0) return edges;
     return edges.map((e) => {
@@ -63,17 +57,12 @@ export const PipelineUI = () => {
     (event) => {
       event.preventDefault();
 
-      const reactFlowBounds =
-        reactFlowWrapper.current.getBoundingClientRect();
+      const reactFlowBounds = reactFlowWrapper.current.getBoundingClientRect();
       if (event?.dataTransfer?.getData('application/reactflow')) {
-        const appData = JSON.parse(
-          event.dataTransfer.getData('application/reactflow'),
-        );
+        const appData = JSON.parse(event.dataTransfer.getData('application/reactflow'));
         const type = appData?.nodeType;
 
-        if (typeof type === 'undefined' || !type) {
-          return;
-        }
+        if (typeof type === 'undefined' || !type) return;
 
         const position = reactFlowInstance.project({
           x: event.clientX - reactFlowBounds.left,
@@ -92,7 +81,7 @@ export const PipelineUI = () => {
       }
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [reactFlowInstance],
+    [reactFlowInstance]
   );
 
   const onDragOver = useCallback((event) => {
@@ -104,7 +93,7 @@ export const PipelineUI = () => {
     <Box
       ref={reactFlowWrapper}
       w="100%"
-      h="calc(100vh - 64px)" /* full viewport minus toolbar; Run moved into the toolbar so no footer remains */
+      h="calc(100vh - 64px)"
       minH="500px"
       bg="canvas.bg"
       position="relative"

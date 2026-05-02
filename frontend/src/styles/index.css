@@ -1,0 +1,20 @@
+/* ReactFlow handle + edge overrides — cannot be styled via Chakra */
+
+.react-flow__handle {
+  width: 10px;
+  height: 10px;
+  border: 2px solid white;
+  background: #6366f1;
+}
+
+.react-flow__handle:hover {
+  background: #4f46e5;
+}
+
+.react-flow__edge-path {
+  stroke: #64748b;
+}
+
+.react-flow__edge.selected .react-flow__edge-path {
+  stroke: #6366f1;
+}

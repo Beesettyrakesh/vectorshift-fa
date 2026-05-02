@@ -1,9 +1,3 @@
-// RunButton.js — the "Run" control in the top-right of the toolbar.
-//
-// POSTs the pipeline to /pipelines/parse (via validatePipeline) and shows
-// the result in a centered modal. Cycle highlighting on the canvas
-// (Req 8.6–8.8) is handled inside validatePipeline() as a side-effect.
-
 import { useState } from 'react';
 import {
   Box,
@@ -20,8 +14,8 @@ import {
   useDisclosure,
 } from '@chakra-ui/react';
 import { shallow } from 'zustand/shallow';
-import { useStore } from '../store';
-import { validatePipeline, clearCycleHighlight } from '../validatePipeline';
+import { useStore } from '../../store/index';
+import { validatePipeline, clearCycleHighlight } from '../../lib/validatePipeline';
 
 const selector = (s) => ({ nodes: s.nodes, edges: s.edges });
 
@@ -33,7 +27,7 @@ const STATUS_COLOR = {
 
 export const RunButton = () => {
   const [isLoading, setIsLoading] = useState(false);
-  const [result, setResult] = useState(null); // { title, status, lines[], hint? }
+  const [result, setResult] = useState(null);
   const { isOpen, onOpen, onClose } = useDisclosure();
   const { nodes, edges } = useStore(selector, shallow);
 
@@ -56,7 +50,6 @@ export const RunButton = () => {
           : 'The red-highlighted nodes and edges form a cycle and cannot be executed as a DAG.',
       });
     } catch (err) {
-      // Don't leave stale red highlighting if the backend is unreachable.
       clearCycleHighlight();
       setResult({
         title: 'Run Failed',

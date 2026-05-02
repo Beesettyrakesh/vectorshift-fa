@@ -1,16 +1,9 @@
-// ValidationStatus.js — tiny status chip pinned to the toolbar (top-right,
-// beside the Run button). Reflects the auto-validate state driven by the
-// debounced POST /pipelines/parse triggered on connect/delete.
-//
-// Subscribes to the pub/sub bus in validatePipeline.js (NOT the Zustand
-// store) because status is transient UI chrome, not pipeline state.
-
 import { useEffect, useState } from 'react';
 import { Box, HStack, Spinner, Text } from '@chakra-ui/react';
 import {
   getAutoValidateStatus,
   subscribeAutoValidateStatus,
-} from '../validatePipeline';
+} from '../../lib/validatePipeline';
 
 const STATUS_META = {
   idle: { color: 'gray.400', label: 'Idle' },

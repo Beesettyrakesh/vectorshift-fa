@@ -14,67 +14,48 @@ import {
   Textarea,
   FormControl,
   FormLabel,
-  Text,
   VStack,
 } from '@chakra-ui/react';
-import { useStore } from '../store';
+import { useStore } from '../../store/index';
 
 /**
  * @typedef {Object} HandleDef
- * @property {string} name    Used to build the handle id: `${nodeId}-${name}`
- * @property {string} [label] Optional display label rendered next to the handle
+ * @property {string} name
+ * @property {string} [label]
  */
 
 /**
  * @typedef {Object} SelectOption
- * @property {string} label   Display text shown in the dropdown
- * @property {string} value   Value stored in `node.data`
+ * @property {string} label
+ * @property {string} value
  */
 
 /**
  * @typedef {Object} FieldDef
- * @property {string} key                Data key written to `node.data[key]`
- * @property {string} label              Label displayed above / beside the field
+ * @property {string} key
+ * @property {string} label
  * @property {'text'|'select'|'number'|'textarea'} type
  * @property {string|number} [defaultValue]
- * @property {SelectOption[]} [options]  Required only when `type === 'select'`
- * @property {number} [min]              Only for `type === 'number'`
- * @property {number} [max]              Only for `type === 'number'`
- * @property {number} [step]             Only for `type === 'number'`
+ * @property {SelectOption[]} [options]
+ * @property {number} [min]
+ * @property {number} [max]
+ * @property {number} [step]
  * @property {string} [placeholder]
  */
 
 /**
  * @typedef {Object} BaseNodeConfig
- * @property {string} title                    Display name in the title bar
- * @property {React.ComponentType} [icon]      `react-icons` component (e.g., FiInbox)
- * @property {string} accentColor              CSS color used for the title bar + left border
- * @property {HandleDef[]} inputs              Input (target) handle defs on the left
- * @property {HandleDef[]} outputs             Output (source) handle defs on the right
- * @property {FieldDef[]} [fields]             Auto-rendered form fields in the body
+ * @property {string} title
+ * @property {React.ComponentType} [icon]
+ * @property {string} accentColor
+ * @property {HandleDef[]} inputs
+ * @property {HandleDef[]} outputs
+ * @property {FieldDef[]} [fields]
  */
 
-/**
- * Compute evenly spaced `top` percentages for N handles on one side.
- *
- * For n handles, handle i (0-indexed) is placed at top = ((i+1)/(n+1))*100%.
- * This produces strictly interior positions (never exactly 0% or 100%) and
- * matches the formula defined in design.md §1 "Handle Spacing Formula" and
- * Property 2 in the correctness properties.
- *
- * @param {number} index
- * @param {number} total
- * @returns {string} CSS `top` value (e.g. "33.33%")
- */
 const handleTop = (index, total) => `${((index + 1) / (total + 1)) * 100}%`;
 
-/**
- * Render a single body field based on its FieldDef, bound to the zustand store.
- *
- * Kept inline (not a separate component) because it's only used by BaseNode
- * and needs the `id` + `data` + `updateNodeField` closure.
- */
-const renderField = ({ id, field, value, onChange }) => {
+const renderField = ({ field, value, onChange }) => {
   const common = {
     size: 'sm',
     bg: 'white',
@@ -111,10 +92,7 @@ const renderField = ({ id, field, value, onChange }) => {
             onChange(Number.isNaN(numberValue) ? stringValue : numberValue)
           }
         >
-          <NumberInputField
-            {...common}
-            placeholder={field.placeholder}
-          />
+          <NumberInputField {...common} placeholder={field.placeholder} />
           <NumberInputStepper>
             <NumberIncrementStepper />
             <NumberDecrementStepper />
@@ -150,20 +128,6 @@ const renderField = ({ id, field, value, onChange }) => {
 
 /**
  * Shared node shell consumed by every node type.
- *
- * @param {Object} props
- * @param {string} props.id                   ReactFlow node id
- * @param {Object} [props.data]               ReactFlow node data (field values)
- * @param {boolean} [props.selected]          ReactFlow `selected` flag
- * @param {BaseNodeConfig} props.config       Static node configuration
- * @param {HandleDef[]} [props.dynamicInputs] Runtime-computed input handles
- *   (used by TextNode for `{{ variable }}` detection). Rendered alongside
- *   `config.inputs` on the left side; if provided, REPLACES `config.inputs`.
- * @param {React.ReactNode} [props.children]  Custom body content. When
- *   provided, `config.fields` is ignored (children take precedence).
- * @param {Object} [props.containerProps]     Additional Chakra props forwarded
- *   to the outer <Box>. Used by TextNode to override width/height for
- *   auto-resize.
  */
 export const BaseNode = ({
   id,
@@ -175,9 +139,6 @@ export const BaseNode = ({
   containerProps,
 }) => {
   const updateNodeField = useStore((state) => state.updateNodeField);
-  // Req 8.6: if this node's id is in the cycle set, draw a red border +
-  // elevated red-tinted shadow. Selector returns a boolean so this
-  // component only re-renders when its own membership flips.
   const isInCycle = useStore((state) => state.cycleNodeIds.has(id));
 
   const inputs = dynamicInputs ?? config.inputs ?? [];
@@ -185,13 +146,7 @@ export const BaseNode = ({
   const fields = config.fields ?? [];
   const IconComponent = config.icon;
 
-  // Cycle styling takes precedence over `selected` to make validation
-  // errors unmissable even when the node is focused.
-  const borderColor = isInCycle
-    ? 'red.400'
-    : selected
-    ? 'brand.500'
-    : 'node.border';
+  const borderColor = isInCycle ? 'red.400' : selected ? 'brand.500' : 'node.border';
   const borderWidth = isInCycle ? '2px' : '1px';
   const boxShadow = isInCycle
     ? '0 0 0 3px rgba(239, 68, 68, 0.25), 0 4px 12px rgba(239, 68, 68, 0.15)'
@@ -210,16 +165,12 @@ export const BaseNode = ({
       boxShadow={boxShadow}
       transition="box-shadow 0.15s ease, border-color 0.15s ease"
       _hover={{
-        boxShadow: isInCycle
-          ? boxShadow
-          : selected
-          ? 'nodeSelected'
-          : 'nodeHover',
+        boxShadow: isInCycle ? boxShadow : selected ? 'nodeSelected' : 'nodeHover',
       }}
       overflow="visible"
       {...containerProps}
     >
-      {/* ---------- Title bar ---------- */}
+      {/* Title bar */}
       <Flex
         align="center"
         gap={2}
@@ -235,7 +186,7 @@ export const BaseNode = ({
         </Heading>
       </Flex>
 
-      {/* ---------- Body ---------- */}
+      {/* Body */}
       <Box px={5} py={3}>
         {children ? (
           children
@@ -243,21 +194,13 @@ export const BaseNode = ({
           <VStack align="stretch" spacing={2}>
             {fields.map((field) => {
               const value =
-                data[field.key] !== undefined
-                  ? data[field.key]
-                  : field.defaultValue;
+                data[field.key] !== undefined ? data[field.key] : field.defaultValue;
               return (
                 <FormControl key={field.key}>
-                  <FormLabel
-                    fontSize="xs"
-                    color="node.textMuted"
-                    mb={1}
-                    fontWeight="500"
-                  >
+                  <FormLabel fontSize="xs" color="node.textMuted" mb={1} fontWeight="500">
                     {field.label}
                   </FormLabel>
                   {renderField({
-                    id,
                     field,
                     value,
                     onChange: (v) => updateNodeField(id, field.key, v),
@@ -269,7 +212,7 @@ export const BaseNode = ({
         ) : null}
       </Box>
 
-      {/* ---------- Input (target) handles on the left ---------- */}
+      {/* Input (target) handles on the left */}
       {inputs.map((h, i) => (
         <Handle
           key={`in-${h.name}`}
@@ -280,7 +223,7 @@ export const BaseNode = ({
         />
       ))}
 
-      {/* ---------- Output (source) handles on the right ---------- */}
+      {/* Output (source) handles on the right */}
       {outputs.map((h, i) => (
         <Handle
           key={`out-${h.name}`}

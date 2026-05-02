@@ -16,8 +16,6 @@ const theme = extendTheme({
   },
 
   colors: {
-    // Primary brand scale (indigo) — used for the Submit button, selected
-    // handles, and selected-edge strokes.
     brand: {
       50: '#eef2ff',
       100: '#e0e7ff',
@@ -31,29 +29,25 @@ const theme = extendTheme({
       900: '#312e81',
     },
 
-    // Toolbar surface (dark slate) + foreground.
     toolbar: {
       bg: '#1C2536',
       fg: '#F8FAFC',
       border: '#334155',
     },
 
-    // Canvas surface (very light slate) + grid dot color.
     canvas: {
       bg: '#F1F5F9',
       grid: '#CBD5E1',
     },
 
-    // Node accent colors by category. These are referenced from
-    // `nodeRegistry.js` — keep the keys aligned with design.md §9.
     nodeAccent: {
-      io: '#22c55e',          // green — Input/Output
-      ai: '#a855f7',          // purple — LLM
-      data: '#06b6d4',        // cyan — Text
-      transform: '#f97316',   // orange — Filter, Transform
-      integration: '#3b82f6', // blue — API Call
-      utility: '#f59e0b',     // amber — Delay
-      logic: '#ef4444',       // red — Conditional
+      io: '#22c55e',
+      ai: '#a855f7',
+      data: '#06b6d4',
+      transform: '#f97316',
+      integration: '#3b82f6',
+      utility: '#f59e0b',
+      logic: '#ef4444',
     },
   },
 

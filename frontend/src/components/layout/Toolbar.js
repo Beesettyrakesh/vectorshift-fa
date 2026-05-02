@@ -1,8 +1,8 @@
 import { Flex, Heading } from '@chakra-ui/react';
-import { DraggableNode } from './draggableNode';
-import { toolbarEntries } from './nodeRegistry';
-import { ValidationStatus } from './components/ValidationStatus';
-import { RunButton } from './components/RunButton';
+import { DraggableNode } from './DraggableNode';
+import { toolbarEntries } from '../nodes/registry';
+import { ValidationStatus } from '../controls/ValidationStatus';
+import { RunButton } from '../controls/RunButton';
 
 export const PipelineToolbar = () => (
   <Flex
@@ -38,9 +38,6 @@ export const PipelineToolbar = () => (
         />
       ))}
     </Flex>
-    {/* Right cluster: auto-validate status chip + Run button.
-        `flexShrink={0}` keeps the cluster fixed-width so a long toolbar
-        entry list can't push Run off-screen. */}
     <Flex align="center" gap={3} flexShrink={0}>
       <ValidationStatus />
       <RunButton />
