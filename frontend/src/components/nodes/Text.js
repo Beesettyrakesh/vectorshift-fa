@@ -1,8 +1,9 @@
 import { useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { FiFileText } from 'react-icons/fi';
-import { Box, Textarea } from '@chakra-ui/react';
+import { Box } from '@chakra-ui/react';
 import { useUpdateNodeInternals } from 'reactflow';
 import { BaseNode } from './BaseNode';
+import { VariableTagInput } from '../controls/VariableTagInput';
 import { useStore } from '../../store/index';
 import { getNodeOutputs } from '../../lib/variableNamespace';
 
@@ -15,15 +16,15 @@ const LINE_H = 21;   // approx px per line
 const PADDING_X = 96; // left+right padding inside the node (px 4 = 16px each side + extras)
 const PADDING_Y = 8;
 
-const DEFAULT_TEXT = '{{input}}';
-const VARIABLE_PATTERN = /\{\{\s*([a-zA-Z_$][a-zA-Z0-9_$]*)\s*\}\}/g;
+// Matches {{node.var}} dot-notation references (same as VariableTagInput)
+const VARIABLE_PATTERN = /\{\{\s*([a-zA-Z_][a-zA-Z0-9_]*)\s*\.\s*([a-zA-Z_][a-zA-Z0-9_]*)\s*\}\}/g;
 
 /** @type {import('./BaseNode').BaseNodeConfig} */
 const textNodeConfig = {
   title: 'Text',
   icon: FiFileText,
   accentColor: '#06b6d4',
-  inputs: [],    // dynamic inputs from {{var}} detection
+  inputs: [],    // dynamic inputs from {{node.var}} detection
   outputs: [],   // handled via outputVars → OutputsPanel
   fields: [],
 };
@@ -34,27 +35,29 @@ export const TextNode = ({ id, data, selected }) => {
   const updateNodeField = useStore((s) => s.updateNodeField);
   const pruneStaleEdgesForNode = useStore((s) => s.pruneStaleEdgesForNode);
   const updateNodeInternals = useUpdateNodeInternals();
-  const text = data?.text !== undefined ? data.text : DEFAULT_TEXT;
+  // Default to empty string — no pre-filled placeholder value
+  const text = data?.text ?? '';
 
   const mirrorRef = useRef(null);    // hidden span for width measurement
-  const textareaRef = useRef(null);
   const [nodeW, setNodeW] = useState(MIN_W);
   const [textareaH, setTextareaH] = useState(MIN_H);
 
-  // ── Detect {{variable}} references → dynamic input handles ────────────────
+  // ── Detect {{node.var}} references → dynamic input handles ────────────────
   const variableNames = useMemo(() => {
     const seen = new Set();
     const ordered = [];
+    VARIABLE_PATTERN.lastIndex = 0;
     for (const match of text.matchAll(VARIABLE_PATTERN)) {
-      const name = match[1];
-      if (!seen.has(name)) { seen.add(name); ordered.push(name); }
+      // Use "nodeName__varName" as a unique handle key
+      const key = `${match[1]}__${match[2]}`;
+      if (!seen.has(key)) { seen.add(key); ordered.push({ node: match[1], var: match[2] }); }
     }
     return ordered;
   }, [text]);
 
-  const variableKey = variableNames.join('\u0000');
+  const variableKey = variableNames.map((v) => `${v.node}.${v.var}`).join('\u0000');
   const dynamicInputs = useMemo(
-    () => variableNames.map((name) => ({ name, label: name })),
+    () => variableNames.map((v) => ({ name: `${v.node}__${v.var}`, label: `${v.node}.${v.var}` })),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [variableKey]
   );
@@ -65,7 +68,7 @@ export const TextNode = ({ id, data, selected }) => {
     prevVariableKey.current = variableKey;
     const validHandleIds = new Set([
       `${id}-result`,
-      ...variableNames.map((name) => `${id}-${name}`),
+      ...variableNames.map((v) => `${id}-${v.node}__${v.var}`),
     ]);
     pruneStaleEdgesForNode(id, validHandleIds);
     updateNodeInternals(id);
@@ -74,19 +77,18 @@ export const TextNode = ({ id, data, selected }) => {
   // ── Auto-resize: grow width with longest line, grow height with content ───
   useLayoutEffect(() => {
     const mirror = mirrorRef.current;
-    const textarea = textareaRef.current;
-    if (!mirror || !textarea) return;
+    if (!mirror) return;
 
-    // Width: measure longest line
+    // Width: measure longest line (strip chip markup, use raw text length)
     const lines = text.split('\n');
     const longestLine = lines.reduce((a, b) => (a.length > b.length ? a : b), '');
     mirror.textContent = longestLine || ' ';
     const contentW = Math.ceil(mirror.scrollWidth) + PADDING_X;
     const nextW = Math.min(Math.max(contentW, MIN_W), MAX_W);
 
-    // Height: if text would wrap (width capped), measure scrollHeight
-    textarea.style.height = 'auto';
-    const nextH = Math.max(textarea.scrollHeight + PADDING_Y, MIN_H);
+    // Height: estimate from line count
+    const lineCount = Math.max(lines.length, 1);
+    const nextH = Math.max(lineCount * LINE_H + PADDING_Y, MIN_H);
 
     let changed = false;
     if (nextW !== nodeW) { setNodeW(nextW); changed = true; }
@@ -105,23 +107,13 @@ export const TextNode = ({ id, data, selected }) => {
       outputHandleCount={1}
       containerProps={{ w: `${nodeW}px`, minW: `${MIN_W}px` }}
     >
-      <Textarea
-        ref={textareaRef}
-        size="sm"
-        resize="none"
+      <VariableTagInput
+        nodeId={id}
+        fieldKey="text"
         value={text}
-        onChange={(e) => updateNodeField(id, 'text', e.target.value)}
-        placeholder="Enter text or type {{ to add variables..."
-        h={`${textareaH}px`}
-        minH={`${MIN_H}px`}
-        spellCheck={false}
-        bg="white"
-        borderColor="gray.200"
-        _hover={{ borderColor: 'gray.300' }}
-        _focus={{ borderColor: 'brand.500', boxShadow: '0 0 0 1px #6366f1' }}
-        w="100%"
-        fontFamily="mono"
-        fontSize="sm"
+        onChange={(val) => updateNodeField(id, 'text', val)}
+        placeholder="Enter text or type {{ to add variables…"
+        minRows={3}
       />
       {/* Hidden mirror span for width measurement */}
       <Box
