@@ -98,6 +98,13 @@ export const VariableTagInput = ({
       .filter((t) => t.kind === 'ref' && validateRef(namespace, t.nodeName, t.varName))
       .map((t) => ({ sourceNodeName: t.nodeName, sourceVarName: t.varName }));
     useStore.getState().setAutoEdges(nodeId, fieldKey, validRefs);
+
+    // Cleanup: when this field unmounts (e.g. Output node switches File→Text,
+    // hiding the Filename field), clear the auto-edges it registered so they
+    // don't linger as ghost arrows on the canvas.
+    return () => {
+      useStore.getState().setAutoEdges(nodeId, fieldKey, []);
+    };
   }, [tokens, namespace, nodeId, fieldKey]);
 
   const lastRefIndex = useMemo(() => {

@@ -83,6 +83,10 @@ export const PipelineUI = () => {
 
         if (typeof type === 'undefined' || !type) return;
 
+        // Guard: reactFlowInstance may still be null if onInit hasn't fired yet
+        // (e.g. user drops a node extremely fast on first load).
+        if (!reactFlowInstance) return;
+
         // project() maps screen coordinates to flow coordinates.
         // screenToFlowPosition() was only added in RF v11.11; we're on v11.8.3.
         const position = reactFlowInstance.project({
