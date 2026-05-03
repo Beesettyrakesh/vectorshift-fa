@@ -65,6 +65,7 @@ export const useStore = create((set, get) => ({
           _nodeId: nodeId,
           _fieldKey: fieldKey,
           // visual marker
+          markerEnd: { type: MarkerType.Arrow, height: '20px', width: '20px' },
           style: { stroke: '#94a3b8', strokeDasharray: '5 4', strokeWidth: 1.5, opacity: 0.7 },
           animated: false,
           selectable: false,
