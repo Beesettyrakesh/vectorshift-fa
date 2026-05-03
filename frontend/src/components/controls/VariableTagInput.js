@@ -133,8 +133,20 @@ export const VariableTagInput = ({
   );
 
   // ── Remove chip ──────────────────────────────────────────────────────────
+  // occurrence is 1-based — which duplicate of rawToRemove to remove.
+  // String.replace(string, '') without /g always removes the FIRST occurrence,
+  // which is wrong when the same chip appears more than once.
   const handleRemove = useCallback(
-    (rawToRemove) => { onChange((value ?? '').replace(rawToRemove, '')); },
+    (rawToRemove, occurrence) => {
+      const escaped = rawToRemove.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      let count = 0;
+      onChange(
+        (value ?? '').replace(new RegExp(escaped, 'g'), (match) => {
+          count++;
+          return count === occurrence ? '' : match;
+        })
+      );
+    },
     [value, onChange]
   );
 
@@ -273,7 +285,15 @@ export const VariableTagInput = ({
                       {token.nodeName}.{token.varName}
                     </TagLabel>
                     <TagCloseButton
-                      onClick={(e) => { e.stopPropagation(); handleRemove(token.raw); }}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        // Calculate which occurrence of this raw string was clicked
+                        // so handleRemove removes exactly this chip, not the first one.
+                        const occurrence = tokens
+                          .slice(0, i)
+                          .filter((t) => t.kind === 'ref' && t.raw === token.raw).length + 1;
+                        handleRemove(token.raw, occurrence);
+                      }}
                     />
                   </Tag>
                 );
