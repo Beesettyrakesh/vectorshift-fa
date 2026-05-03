@@ -87,6 +87,8 @@ export const PipelineUI = () => {
 
         if (typeof type === 'undefined' || !type) return;
 
+        // project() maps screen coordinates to flow coordinates.
+        // screenToFlowPosition() was only added in RF v11.11; we're on v11.8.3.
         const position = reactFlowInstance.project({
           x: event.clientX - reactFlowBounds.left,
           y: event.clientY - reactFlowBounds.top,

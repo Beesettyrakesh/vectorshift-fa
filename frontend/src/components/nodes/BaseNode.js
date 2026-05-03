@@ -158,6 +158,16 @@ export const BaseNode = ({
   const updateNodeField = useStore((s) => s.updateNodeField);
   const renameNode = useStore((s) => s.renameNode);
   const isInCycle = useStore((s) => s.cycleNodeIds.has(id));
+  // Unique source node IDs that have an auto-edge pointing into this node.
+  // Each gets its own target handle so ReactFlow renders them at distinct positions.
+  const autoInSources = useStore((s) => {
+    const sources = [...new Set(
+      s.autoEdges
+        .filter((ae) => ae.target === id)
+        .map((ae) => ae.source)
+    )];
+    return sources;
+  });
 
   // Outputs panel collapsed state — default TRUE (hidden)
   const [outputsCollapsed, setOutputsCollapsed] = useState(true);
@@ -228,7 +238,7 @@ export const BaseNode = ({
           ) : null}
         </Box>
 
-        {/* Input handles */}
+        {/* Static input handles (from node config) */}
         {inputs.map((h, i) => (
           <Handle
             key={`in-${h.name}`}
@@ -236,6 +246,19 @@ export const BaseNode = ({
             position={Position.Left}
             id={`${id}-${h.name}`}
             style={{ top: handleTop(i, inputs.length) }}
+          />
+        ))}
+
+        {/* Dynamic target handles — one per unique auto-edge source node.
+            Handle ID matches the targetHandle set in store/setAutoEdges:
+            "${nodeId}-auto-${sourceId}". Spaced evenly regardless of panel state. */}
+        {autoInSources.map((sourceId, i) => (
+          <Handle
+            key={`auto-in-${sourceId}`}
+            type="target"
+            position={Position.Left}
+            id={`${id}-auto-${sourceId}`}
+            style={{ top: handleTop(i, autoInSources.length) }}
           />
         ))}
 

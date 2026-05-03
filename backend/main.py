@@ -49,14 +49,24 @@ class ParseResponse(BaseModel):
 
 def _build_adjacency(
     nodes: List[NodeItem], edges: List[EdgeItem]
-) -> Tuple[Set[str], Dict[str, List[str]]]:
-    """Return (valid node id set, adjacency list restricted to those ids)."""
+) -> Tuple[Set[str], Dict[str, List[str]], int]:
+    """
+    Return (valid node id set, adjacency list, validated edge count).
+
+    Edges that reference non-existent node IDs are silently dropped.
+    Duplicate source→target pairs are deduplicated so they don't inflate
+    in_degree counts in Kahn's algorithm or num_edges in the response.
+    """
     node_ids = {n.id for n in nodes}
     adj: Dict[str, List[str]] = defaultdict(list)
+    seen: Set[Tuple[str, str]] = set()
     for e in edges:
         if e.source in node_ids and e.target in node_ids:
-            adj[e.source].append(e.target)
-    return node_ids, adj
+            pair = (e.source, e.target)
+            if pair not in seen:
+                seen.add(pair)
+                adj[e.source].append(e.target)
+    return node_ids, adj, len(seen)
 
 
 def _is_dag(node_ids: Set[str], adj: Dict[str, List[str]]) -> bool:
@@ -184,13 +194,14 @@ def read_root():
 
 @app.post("/pipelines/parse", response_model=ParseResponse)
 def parse_pipeline(payload: PipelinePayload):
-    node_ids, adj = _build_adjacency(payload.nodes, payload.edges)
+    # num_edges reflects validated, deduplicated edges — not raw payload count.
+    node_ids, adj, num_edges = _build_adjacency(payload.nodes, payload.edges)
     is_dag = _is_dag(node_ids, adj)
 
     if is_dag:
         return ParseResponse(
             num_nodes=len(payload.nodes),
-            num_edges=len(payload.edges),
+            num_edges=num_edges,
             is_dag=True,
             cycle_nodes=[],
             cycle_edges=[],
@@ -201,7 +212,7 @@ def parse_pipeline(payload: PipelinePayload):
 
     return ParseResponse(
         num_nodes=len(payload.nodes),
-        num_edges=len(payload.edges),
+        num_edges=num_edges,
         is_dag=False,
         cycle_nodes=sorted(cycle_members),
         cycle_edges=cycle_edges,

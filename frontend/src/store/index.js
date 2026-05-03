@@ -52,10 +52,12 @@ export const useStore = create((set, get) => ({
           id: `auto__${sourceId}__${r.sourceVarName}__${nodeId}__${fieldKey}`,
           source: sourceId,
           target: nodeId,
-          sourceHandle: `${sourceId}-${r.sourceVarName}`,
-          // No targetHandle — each auto-edge from a different source must use a
-          // unique handle or no handle at all; sharing "${nodeId}-input" causes
-          // ReactFlow to render only the first edge (silent dedup by handle key).
+          // Each auto-edge gets a unique targetHandle "nodeId-auto-sourceId" so
+          // ReactFlow renders them at distinct positions on the target node's left
+          // side. BaseNode dynamically renders a matching <Handle type="target">
+          // for each unique incoming source. sourceHandle/targetHandle are stripped
+          // by buildPayload() before sending to the backend, so no logic impact.
+          targetHandle: `${nodeId}-auto-${sourceId}`,
           type: 'smoothstep',
           _nodeId: nodeId,
           _fieldKey: fieldKey,
@@ -146,8 +148,20 @@ export const useStore = create((set, get) => ({
   // ── ReactFlow change handlers ─────────────────────────────────────────────
   onNodesChange: (changes) => {
     set({ nodes: applyNodeChanges(changes, get().nodes) });
-    const hasRemove = changes.some((c) => c.type === 'remove');
-    if (hasRemove || isAutoValidateInErrorState()) _scheduleAutoValidate();
+    const removedIds = new Set(
+      changes.filter((c) => c.type === 'remove').map((c) => c.id)
+    );
+    if (removedIds.size > 0) {
+      // Clean up any auto-edges that referenced a deleted node (as source or target)
+      set({
+        autoEdges: get().autoEdges.filter(
+          (ae) => !removedIds.has(ae.source) && !removedIds.has(ae.target)
+        ),
+      });
+      _scheduleAutoValidate();
+    } else if (isAutoValidateInErrorState()) {
+      _scheduleAutoValidate();
+    }
   },
   onEdgesChange: (changes) => {
     set({ edges: applyEdgeChanges(changes, get().edges) });
@@ -174,7 +188,9 @@ export const useStore = create((set, get) => ({
     set({
       nodes: get().nodes.map((node) => {
         if (node.id === nodeId) {
-          node.data = { ...node.data, [fieldName]: fieldValue };
+          // Return a new node object — never mutate the existing reference.
+          // Mutating in place breaks shallow-equality selectors and React reconciliation.
+          return { ...node, data: { ...node.data, [fieldName]: fieldValue } };
         }
         return node;
       }),
@@ -183,11 +199,16 @@ export const useStore = create((set, get) => ({
 
   pruneStaleEdgesForNode: (nodeId, validHandleIds) => {
     set({
+      // Prune real edges whose sourceHandle / targetHandle no longer exist.
       edges: get().edges.filter((e) => {
         if (e.source === nodeId && !validHandleIds.has(e.sourceHandle)) return false;
-        if (e.target === nodeId && !validHandleIds.has(e.targetHandle)) return false;
+        // Auto-edges have no targetHandle; only prune real edges on the target side.
+        if (e.target === nodeId && e.targetHandle && !validHandleIds.has(e.targetHandle)) return false;
         return true;
       }),
+      // Auto-edges for this (nodeId, fieldKey) are self-managed via setAutoEdges.
+      // When a chip is removed the field value changes → setAutoEdges is called → stale auto-edge removed.
+      // Nothing to do here for auto-edges on a per-handle basis.
     });
   },
 }));
