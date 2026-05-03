@@ -14,8 +14,13 @@ const MIN_H = 80;    // px — minimum textarea height
 const LINE_H = 21;   // approx px per line (used for width-only estimate)
 const PADDING_X = 96; // left+right node padding for width calculation
 
-// Matches {{node.var}} dot-notation references (same as VariableTagInput)
-const VARIABLE_PATTERN = /\{\{\s*([a-zA-Z_][a-zA-Z0-9_]*)\s*\.\s*([a-zA-Z_][a-zA-Z0-9_]*)\s*\}\}/g;
+// Matches {{variable}} — simple JS identifier in double curly braces.
+// This is the Text node's own variable syntax: each unique variable name
+// becomes a left-side input Handle that other nodes can connect into.
+// This is intentionally different from the dot-notation {{node.var}} used
+// by VariableTagInput chips — Text node variables are local placeholders,
+// not references to specific output variables of upstream nodes.
+const VARIABLE_PATTERN = /\{\{\s*([a-zA-Z_][a-zA-Z0-9_]*)\s*\}\}/g;
 
 /** @type {import('./BaseNode').BaseNodeConfig} */
 const textNodeConfig = {
@@ -41,22 +46,23 @@ export const TextNode = ({ id, data, selected }) => {
   const [nodeW, setNodeW] = useState(MIN_W);
   const [textareaH, setTextareaH] = useState(MIN_H);
 
-  // ── Detect {{node.var}} references → dynamic input handles ────────────────
+  // ── Detect {{variable}} references → dynamic input handles ───────────────
+  // Each unique variable name becomes one left-side target Handle.
   const variableNames = useMemo(() => {
     const seen = new Set();
     const ordered = [];
     VARIABLE_PATTERN.lastIndex = 0;
     for (const match of text.matchAll(VARIABLE_PATTERN)) {
-      // Use "nodeName__varName" as a unique handle key
-      const key = `${match[1]}__${match[2]}`;
-      if (!seen.has(key)) { seen.add(key); ordered.push({ node: match[1], var: match[2] }); }
+      const name = match[1]; // e.g. "input", "myVar"
+      if (!seen.has(name)) { seen.add(name); ordered.push(name); }
     }
     return ordered;
   }, [text]);
 
-  const variableKey = variableNames.map((v) => `${v.node}.${v.var}`).join('\u0000');
+  // Stable string key for memoising dynamicInputs without a deep comparison
+  const variableKey = variableNames.join('\u0000');
   const dynamicInputs = useMemo(
-    () => variableNames.map((v) => ({ name: `${v.node}__${v.var}`, label: `${v.node}.${v.var}` })),
+    () => variableNames.map((name) => ({ name, label: name })),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [variableKey]
   );
@@ -67,7 +73,7 @@ export const TextNode = ({ id, data, selected }) => {
     prevVariableKey.current = variableKey;
     const validHandleIds = new Set([
       `${id}-result`,
-      ...variableNames.map((v) => `${id}-${v.node}__${v.var}`),
+      ...variableNames.map((name) => `${id}-${name}`),
     ]);
     pruneStaleEdgesForNode(id, validHandleIds);
     updateNodeInternals(id);

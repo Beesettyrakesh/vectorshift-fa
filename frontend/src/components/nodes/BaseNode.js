@@ -234,7 +234,7 @@ export const BaseNode = ({
           ) : null}
         </Box>
 
-        {/* Static input handles (from node config only — never dynamicInputs) */}
+        {/* Static input handles (from node config) */}
         {staticInputs.map((h, i) => (
           <Handle
             key={`in-${h.name}`}
@@ -242,6 +242,19 @@ export const BaseNode = ({
             position={Position.Left}
             id={`${id}-${h.name}`}
             style={{ top: handleTop(i, staticInputs.length) }}
+          />
+        ))}
+
+        {/* Dynamic input handles — one per unique {{variable}} in the Text node.
+            dynamicInputs is undefined for all other nodes (they never pass this prop),
+            so (dynamicInputs ?? []) safely renders nothing for them. */}
+        {(dynamicInputs ?? []).map((h, i) => (
+          <Handle
+            key={`dyn-in-${h.name}`}
+            type="target"
+            position={Position.Left}
+            id={`${id}-${h.name}`}
+            style={{ top: handleTop(i, (dynamicInputs ?? []).length) }}
           />
         ))}
 
