@@ -1,4 +1,4 @@
-import { useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { useLayoutEffect, useMemo, useRef, useState, useEffect } from 'react';
 import { FiFileText } from 'react-icons/fi';
 import { Box } from '@chakra-ui/react';
 import { useUpdateNodeInternals } from 'reactflow';
@@ -11,10 +11,8 @@ import { getNodeOutputs } from '../../lib/variableNamespace';
 const MIN_W = 240;   // px — matches other nodes' default width
 const MAX_W = 500;   // px — max width before text wraps and only height grows
 const MIN_H = 80;    // px — minimum textarea height
-const CHAR_W = 8.4;  // approx px per character at 14px monospace
-const LINE_H = 21;   // approx px per line
-const PADDING_X = 96; // left+right padding inside the node (px 4 = 16px each side + extras)
-const PADDING_Y = 8;
+const LINE_H = 21;   // approx px per line (used for width-only estimate)
+const PADDING_X = 96; // left+right node padding for width calculation
 
 // Matches {{node.var}} dot-notation references (same as VariableTagInput)
 const VARIABLE_PATTERN = /\{\{\s*([a-zA-Z_][a-zA-Z0-9_]*)\s*\.\s*([a-zA-Z_][a-zA-Z0-9_]*)\s*\}\}/g;
@@ -38,7 +36,8 @@ export const TextNode = ({ id, data, selected }) => {
   // Default to empty string — no pre-filled placeholder value
   const text = data?.text ?? '';
 
-  const mirrorRef = useRef(null);    // hidden span for width measurement
+  const mirrorRef = useRef(null);       // hidden span for width measurement
+  const containerRef = useRef(null);    // real container for height measurement
   const [nodeW, setNodeW] = useState(MIN_W);
   const [textareaH, setTextareaH] = useState(MIN_H);
 
@@ -74,27 +73,41 @@ export const TextNode = ({ id, data, selected }) => {
     updateNodeInternals(id);
   }, [variableKey, variableNames, id, updateNodeInternals, pruneStaleEdgesForNode]);
 
-  // ── Auto-resize: grow width with longest line, grow height with content ───
+  // ── Auto-resize width: measure longest line via hidden mirror span ────────
   useLayoutEffect(() => {
     const mirror = mirrorRef.current;
     if (!mirror) return;
-
-    // Width: measure longest line (strip chip markup, use raw text length)
     const lines = text.split('\n');
     const longestLine = lines.reduce((a, b) => (a.length > b.length ? a : b), '');
     mirror.textContent = longestLine || ' ';
     const contentW = Math.ceil(mirror.scrollWidth) + PADDING_X;
     const nextW = Math.min(Math.max(contentW, MIN_W), MAX_W);
+    if (nextW !== nodeW) {
+      setNodeW(nextW);
+      updateNodeInternals(id);
+    }
+  }, [text, id, nodeW, updateNodeInternals]);
 
-    // Height: estimate from line count
-    const lineCount = Math.max(lines.length, 1);
-    const nextH = Math.max(lineCount * LINE_H + PADDING_Y, MIN_H);
-
-    let changed = false;
-    if (nextW !== nodeW) { setNodeW(nextW); changed = true; }
-    if (nextH !== textareaH) { setTextareaH(nextH); changed = true; }
-    if (changed) updateNodeInternals(id);
-  }, [text, id, nodeW, textareaH, updateNodeInternals]);
+  // ── Auto-resize height: ResizeObserver on actual container ───────────────
+  // LINE_H * lineCount under-estimates height when there are chip rows.
+  // ResizeObserver reads the real rendered clientHeight — always accurate.
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    const ro = new ResizeObserver((entries) => {
+      const h = entries[0]?.contentRect.height;
+      if (h && h > 0) {
+        const nextH = Math.max(h, MIN_H);
+        setTextareaH((prev) => {
+          if (Math.abs(prev - nextH) < 2) return prev; // avoid jitter
+          updateNodeInternals(id);
+          return nextH;
+        });
+      }
+    });
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [id, updateNodeInternals]);
 
   return (
     <BaseNode
@@ -107,14 +120,16 @@ export const TextNode = ({ id, data, selected }) => {
       outputHandleCount={1}
       containerProps={{ w: `${nodeW}px`, minW: `${MIN_W}px` }}
     >
-      <VariableTagInput
-        nodeId={id}
-        fieldKey="text"
-        value={text}
-        onChange={(val) => updateNodeField(id, 'text', val)}
-        placeholder="Enter text or type {{ to add variables…"
-        minRows={3}
-      />
+      <Box ref={containerRef}>
+        <VariableTagInput
+          nodeId={id}
+          fieldKey="text"
+          value={text}
+          onChange={(val) => updateNodeField(id, 'text', val)}
+          placeholder="Enter text or type {{ to add variables…"
+          minRows={3}
+        />
+      </Box>
       {/* Hidden mirror span for width measurement */}
       <Box
         ref={mirrorRef}

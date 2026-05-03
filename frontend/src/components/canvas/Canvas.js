@@ -74,8 +74,6 @@ export const PipelineUI = () => {
     return [...realStyled, ...styledAuto];
   }, [edges, autoEdges, cycleEdgeKeys]);
 
-  const getInitNodeData = (nodeID, type) => ({ id: nodeID, nodeType: type });
-
   const onDrop = useCallback(
     (event) => {
       event.preventDefault();
@@ -94,18 +92,21 @@ export const PipelineUI = () => {
           y: event.clientY - reactFlowBounds.top,
         });
 
-        const nodeID = getNodeID(type);
+        // Use getState() directly to avoid stale-closure over getNodeID/addNode.
+        // Zustand action references are stable, but this is explicit and avoids
+        // the eslint-disable comment.
+        const { getNodeID: _getNodeID, addNode: _addNode } = useStore.getState();
+        const nodeID = _getNodeID(type);
         const newNode = {
           id: nodeID,
           type,
           position,
-          data: getInitNodeData(nodeID, type),
+          data: { id: nodeID, nodeType: type },
         };
 
-        addNode(newNode);
+        _addNode(newNode);
       }
     },
-    // eslint-disable-next-line react-hooks/exhaustive-deps
     [reactFlowInstance]
   );
 
