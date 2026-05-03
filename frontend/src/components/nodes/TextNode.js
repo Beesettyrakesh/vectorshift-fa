@@ -1,25 +1,22 @@
 import { useLayoutEffect, useMemo, useRef, useState, useEffect } from 'react';
 import { FiFileText } from 'react-icons/fi';
-import { Box } from '@chakra-ui/react';
+import { Box, Textarea } from '@chakra-ui/react';
 import { useUpdateNodeInternals } from 'reactflow';
 import { BaseNode } from './BaseNode';
-import { VariableTagInput } from '../controls/VariableTagInput';
 import { useStore } from '../../store/index';
 import { getNodeOutputs } from '../../lib/variableNamespace';
 
 // ── Sizing constants ──────────────────────────────────────────────────────────
-const MIN_W = 240;   // px — matches other nodes' default width
-const MAX_W = 500;   // px — max width before text wraps and only height grows
-const MIN_H = 80;    // px — minimum textarea height
-const LINE_H = 21;   // approx px per line (used for width-only estimate)
+const MIN_W = 240;    // px
+const MAX_W = 500;    // px
+const MIN_H = 80;     // px
 const PADDING_X = 96; // left+right node padding for width calculation
 
-// Matches {{variable}} — simple JS identifier in double curly braces.
-// This is the Text node's own variable syntax: each unique variable name
-// becomes a left-side input Handle that other nodes can connect into.
-// This is intentionally different from the dot-notation {{node.var}} used
-// by VariableTagInput chips — Text node variables are local placeholders,
-// not references to specific output variables of upstream nodes.
+// Matches {{variable}} — a valid JS identifier in double curly braces.
+// Each unique variable name becomes one left-side input Handle on the Text node.
+// Users type these manually as template placeholders (e.g. {{name}}, {{context}}).
+// This is intentionally different from the {{node.var}} dot-notation used by
+// VariableTagInput — Text node variables are reusable slot names, not namespace refs.
 const VARIABLE_PATTERN = /\{\{\s*([a-zA-Z_][a-zA-Z0-9_]*)\s*\}\}/g;
 
 /** @type {import('./BaseNode').BaseNodeConfig} */
@@ -27,7 +24,7 @@ const textNodeConfig = {
   title: 'Text',
   icon: FiFileText,
   accentColor: '#06b6d4',
-  inputs: [],    // dynamic inputs from {{node.var}} detection
+  inputs: [],    // dynamic — derived from {{variable}} detection
   outputs: [],   // handled via outputVars → OutputsPanel
   fields: [],
 };
@@ -38,22 +35,21 @@ export const TextNode = ({ id, data, selected }) => {
   const updateNodeField = useStore((s) => s.updateNodeField);
   const pruneStaleEdgesForNode = useStore((s) => s.pruneStaleEdgesForNode);
   const updateNodeInternals = useUpdateNodeInternals();
-  // Default to empty string — no pre-filled placeholder value
   const text = data?.text ?? '';
 
-  const mirrorRef = useRef(null);       // hidden span for width measurement
-  const containerRef = useRef(null);    // real container for height measurement
+  const mirrorRef = useRef(null);    // hidden span for width measurement
+  const containerRef = useRef(null); // real container for height measurement
   const [nodeW, setNodeW] = useState(MIN_W);
-  const [textareaH, setTextareaH] = useState(MIN_H);
 
   // ── Detect {{variable}} references → dynamic input handles ───────────────
   // Each unique variable name becomes one left-side target Handle.
+  // No picker, no chips, no namespace validation — user types freely.
   const variableNames = useMemo(() => {
     const seen = new Set();
     const ordered = [];
     VARIABLE_PATTERN.lastIndex = 0;
     for (const match of text.matchAll(VARIABLE_PATTERN)) {
-      const name = match[1]; // e.g. "input", "myVar"
+      const name = match[1];
       if (!seen.has(name)) { seen.add(name); ordered.push(name); }
     }
     return ordered;
@@ -67,6 +63,7 @@ export const TextNode = ({ id, data, selected }) => {
     [variableKey]
   );
 
+  // Prune stale edges + notify ReactFlow when variable handles change
   const prevVariableKey = useRef('');
   useLayoutEffect(() => {
     if (prevVariableKey.current === variableKey) return;
@@ -94,22 +91,13 @@ export const TextNode = ({ id, data, selected }) => {
     }
   }, [text, id, nodeW, updateNodeInternals]);
 
-  // ── Auto-resize height: ResizeObserver on actual container ───────────────
-  // LINE_H * lineCount under-estimates height when there are chip rows.
-  // ResizeObserver reads the real rendered clientHeight — always accurate.
+  // ── Auto-resize height: ResizeObserver on the textarea container ─────────
   useEffect(() => {
     const el = containerRef.current;
     if (!el) return;
     const ro = new ResizeObserver((entries) => {
       const h = entries[0]?.contentRect.height;
-      if (h && h > 0) {
-        const nextH = Math.max(h, MIN_H);
-        setTextareaH((prev) => {
-          if (Math.abs(prev - nextH) < 2) return prev; // avoid jitter
-          updateNodeInternals(id);
-          return nextH;
-        });
-      }
+      if (h && h > 0 && h >= MIN_H) updateNodeInternals(id);
     });
     ro.observe(el);
     return () => ro.disconnect();
@@ -127,13 +115,20 @@ export const TextNode = ({ id, data, selected }) => {
       containerProps={{ w: `${nodeW}px`, minW: `${MIN_W}px` }}
     >
       <Box ref={containerRef}>
-        <VariableTagInput
-          nodeId={id}
-          fieldKey="text"
+        <Textarea
           value={text}
-          onChange={(val) => updateNodeField(id, 'text', val)}
-          placeholder="Enter text or type {{ to add variables…"
-          minRows={3}
+          onChange={(e) => updateNodeField(id, 'text', e.target.value)}
+          placeholder="Enter text… type {{variable}} to create an input handle"
+          size="sm"
+          bg="white"
+          borderColor="gray.200"
+          fontFamily="mono"
+          fontSize="sm"
+          resize="vertical"
+          minH={`${MIN_H}px`}
+          rows={3}
+          _hover={{ borderColor: 'gray.300' }}
+          _focus={{ borderColor: 'brand.500', boxShadow: '0 0 0 1px #6366f1' }}
         />
       </Box>
       {/* Hidden mirror span for width measurement */}
