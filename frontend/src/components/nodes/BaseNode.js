@@ -172,7 +172,7 @@ export const BaseNode = ({
   // Outputs panel collapsed state — default TRUE (hidden)
   const [outputsCollapsed, setOutputsCollapsed] = useState(true);
 
-  const inputs = dynamicInputs ?? config.inputs ?? [];
+  const staticInputs = config.inputs ?? [];
   const legacyOutputs = outputVars ? [] : (config.outputs ?? []);
   const fields = config.fields ?? [];
   const IconComponent = config.icon;
@@ -238,14 +238,14 @@ export const BaseNode = ({
           ) : null}
         </Box>
 
-        {/* Static input handles (from node config) */}
-        {inputs.map((h, i) => (
+        {/* Static input handles (from node config only — never dynamicInputs) */}
+        {staticInputs.map((h, i) => (
           <Handle
             key={`in-${h.name}`}
             type="target"
             position={Position.Left}
             id={`${id}-${h.name}`}
-            style={{ top: handleTop(i, inputs.length) }}
+            style={{ top: handleTop(i, staticInputs.length) }}
           />
         ))}
 
