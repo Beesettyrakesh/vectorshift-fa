@@ -159,15 +159,11 @@ export const BaseNode = ({
   const updateNodeField = useStore((s) => s.updateNodeField);
   const renameNode = useStore((s) => s.renameNode);
   const isInCycle = useStore((s) => s.cycleNodeIds.has(id));
-  // Unique source node IDs that have an auto-edge pointing into this node.
-  // Each gets its own target handle so ReactFlow renders them at distinct positions.
-  const autoInSources = useStore(useShallow((s) => {
-    return [...new Set(
-      s.autoEdges
-        .filter((ae) => ae.target === id)
-        .map((ae) => ae.source)
-    )];
-  }));
+  // Whether any auto-edge is currently pointing into this node.
+  // All auto-edges share one fixed handle id "${id}-auto-in" so only a
+  // single input handle dot is rendered regardless of how many upstream
+  // nodes are referenced via {{node.var}} chips.
+  const hasAutoIn = useStore((s) => s.autoEdges.some((ae) => ae.target === id));
 
   // Outputs panel collapsed state — default TRUE (hidden)
   const [outputsCollapsed, setOutputsCollapsed] = useState(true);
@@ -249,18 +245,19 @@ export const BaseNode = ({
           />
         ))}
 
-        {/* Dynamic target handles — one per unique auto-edge source node.
-            Handle ID matches the targetHandle set in store/setAutoEdges:
-            "${nodeId}-auto-${sourceId}". Spaced evenly regardless of panel state. */}
-        {autoInSources.map((sourceId, i) => (
+        {/* Single shared target handle for all auto-edges ({{node.var}} references).
+            All auto-edges targeting this node use targetHandle="${id}-auto-in"
+            so only one handle dot appears regardless of how many upstream nodes
+            are referenced. Positioned at 50% (center-left). */}
+        {hasAutoIn && (
           <Handle
-            key={`auto-in-${sourceId}`}
+            key="auto-in"
             type="target"
             position={Position.Left}
-            id={`${id}-auto-${sourceId}`}
-            style={{ top: handleTop(i, autoInSources.length) }}
+            id={`${id}-auto-in`}
+            style={{ top: '50%' }}
           />
-        ))}
+        )}
 
         {/* Legacy output handles (nodes without outputVars) */}
         {legacyOutputs.map((h, i) => (

@@ -57,7 +57,10 @@ export const useStore = create((set, get) => ({
           // side. BaseNode dynamically renders a matching <Handle type="target">
           // for each unique incoming source. sourceHandle/targetHandle are stripped
           // by buildPayload() before sending to the backend, so no logic impact.
-          targetHandle: `${nodeId}-auto-${sourceId}`,
+          // All auto-edges into this node share one fixed handle so only
+          // a single input handle dot is rendered regardless of how many
+          // upstream nodes are referenced via {{node.var}} chips.
+          targetHandle: `${nodeId}-auto-in`,
           type: 'smoothstep',
           _nodeId: nodeId,
           _fieldKey: fieldKey,
