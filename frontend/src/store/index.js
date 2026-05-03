@@ -7,7 +7,7 @@ import {
   applyEdgeChanges,
   MarkerType,
 } from 'reactflow';
-import { isAutoValidateInErrorState } from '../lib/validatePipeline';
+import { isAutoValidateInErrorState } from '../lib/validateStatus';
 import { cascadeRename } from '../lib/variableNamespace';
 
 const toSet = (v) => (v instanceof Set ? v : new Set(v ?? []));

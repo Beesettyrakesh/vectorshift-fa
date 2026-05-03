@@ -51,6 +51,7 @@ const TRANSFORM_OPTIONS = [
   { label: 'Join',                value: 'join'                },
   // ── List ──
   { label: '── List ──',          value: '',                disabled: true },
+  { label: 'Sum',                 value: 'sum'                 },
   { label: 'Map',                 value: 'map'                 },
   { label: 'Slice',               value: 'slice'               },
   { label: 'Sort',                value: 'sort'                },

@@ -1,5 +1,6 @@
 import { useRef, useState } from 'react';
 import { Handle, Position } from 'reactflow';
+import { useShallow } from 'zustand/react/shallow';
 import {
   Box,
   Flex,
@@ -160,14 +161,13 @@ export const BaseNode = ({
   const isInCycle = useStore((s) => s.cycleNodeIds.has(id));
   // Unique source node IDs that have an auto-edge pointing into this node.
   // Each gets its own target handle so ReactFlow renders them at distinct positions.
-  const autoInSources = useStore((s) => {
-    const sources = [...new Set(
+  const autoInSources = useStore(useShallow((s) => {
+    return [...new Set(
       s.autoEdges
         .filter((ae) => ae.target === id)
         .map((ae) => ae.source)
     )];
-    return sources;
-  });
+  }));
 
   // Outputs panel collapsed state — default TRUE (hidden)
   const [outputsCollapsed, setOutputsCollapsed] = useState(true);

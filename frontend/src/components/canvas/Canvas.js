@@ -1,6 +1,6 @@
 import { useState, useRef, useCallback, useMemo } from 'react';
 import ReactFlow, { Controls, Background, MiniMap, MarkerType } from 'reactflow';
-import { shallow } from 'zustand/shallow';
+import { useShallow } from 'zustand/react/shallow';
 import { Box } from '@chakra-ui/react';
 
 import { useStore } from '../../store/index';
@@ -36,7 +36,7 @@ export const PipelineUI = () => {
     onNodesChange,
     onEdgesChange,
     onConnect,
-  } = useStore(selector, shallow);
+  } = useStore(useShallow(selector));
 
   const styledEdges = useMemo(() => {
     // 1. Style real edges (cycle highlight)

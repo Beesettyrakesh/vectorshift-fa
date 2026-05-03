@@ -3,6 +3,12 @@
 // store's onConnect / onNodesChange / onEdgesChange.
 
 import { useStore } from '../store/index';
+import {
+  getAutoValidateStatus,
+  isAutoValidateInErrorState,
+  subscribeAutoValidateStatus,
+  _setStatus,
+} from './validateStatus';
 
 export const PARSE_URL = 'http://localhost:8000/pipelines/parse';
 
@@ -53,20 +59,8 @@ export const clearCycleHighlight = () => {
   useStore.getState().clearCycleHighlight();
 };
 
-let _status = 'idle';
-const _listeners = new Set();
-
-export const getAutoValidateStatus = () => _status;
-export const isAutoValidateInErrorState = () => _status === 'error';
-export const subscribeAutoValidateStatus = (cb) => {
-  _listeners.add(cb);
-  return () => _listeners.delete(cb);
-};
-const _setStatus = (next) => {
-  if (_status === next) return;
-  _status = next;
-  for (const cb of _listeners) cb(_status);
-};
+// Re-export status helpers so existing consumers don't need to change their imports.
+export { getAutoValidateStatus, isAutoValidateInErrorState, subscribeAutoValidateStatus };
 
 const _runAutoValidate = async () => {
   const state = useStore.getState();

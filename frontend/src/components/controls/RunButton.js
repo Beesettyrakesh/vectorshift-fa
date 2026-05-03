@@ -13,7 +13,7 @@ import {
   VStack,
   useDisclosure,
 } from '@chakra-ui/react';
-import { shallow } from 'zustand/shallow';
+import { useShallow } from 'zustand/react/shallow';
 import { useStore } from '../../store/index';
 import { runAutoValidate, clearCycleHighlight, getAutoValidateStatus } from '../../lib/validatePipeline';
 
@@ -33,7 +33,7 @@ export const RunButton = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [result, setResult] = useState(null);
   const { isOpen, onOpen, onClose } = useDisclosure();
-  const { nodes, edges, autoEdges } = useStore(selector, shallow);
+  const { nodes, edges, autoEdges } = useStore(useShallow(selector));
 
   // Disabled when canvas is empty or no connections exist (real or auto)
   const allEdgeCount = edges.length + autoEdges.length;
