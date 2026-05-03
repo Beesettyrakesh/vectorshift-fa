@@ -10,15 +10,15 @@ import {
   FiGitBranch,
 } from 'react-icons/fi';
 
-import { InputNode } from './Input';
-import { OutputNode } from './Output';
-import { LLMNode } from './LLM';
-import { TextNode } from './Text';
-import { FilterNode } from './Filter';
-import { TransformNode } from './Transform';
-import { APICallNode } from './ApiCall';
-import { DelayNode } from './Delay';
-import { ConditionalNode } from './Conditional';
+import { InputNode } from '../components/nodes/InputNode';
+import { OutputNode } from '../components/nodes/OutputNode';
+import { LlmNode } from '../components/nodes/LlmNode';
+import { TextNode } from '../components/nodes/TextNode';
+import { FilterNode } from '../components/nodes/FilterNode';
+import { TransformNode } from '../components/nodes/TransformNode';
+import { ApiCallNode } from '../components/nodes/ApiCallNode';
+import { DelayNode } from '../components/nodes/DelayNode';
+import { ConditionalNode } from '../components/nodes/ConditionalNode';
 
 /**
  * @typedef {Object} NodeRegistryEntry
@@ -30,7 +30,7 @@ import { ConditionalNode } from './Conditional';
  */
 
 /** @type {Record<string, NodeRegistryEntry>} */
-export const nodeRegistry = {
+export const NodeRegistry = {
   customInput: {
     component: InputNode,
     label: 'Input',
@@ -46,7 +46,7 @@ export const nodeRegistry = {
     icon: FiLogOut,
   },
   llm: {
-    component: LLMNode,
+    component: LlmNode,
     label: 'LLM',
     category: 'ai',
     accentColor: '#a855f7',
@@ -74,7 +74,7 @@ export const nodeRegistry = {
     icon: FiRepeat,
   },
   apiCall: {
-    component: APICallNode,
+    component: ApiCallNode,
     label: 'API Call',
     category: 'integration',
     accentColor: '#3b82f6',
@@ -98,10 +98,10 @@ export const nodeRegistry = {
 
 /** @type {Record<string, React.ComponentType>} */
 export const nodeTypes = Object.fromEntries(
-  Object.entries(nodeRegistry).map(([key, entry]) => [key, entry.component])
+  Object.entries(NodeRegistry).map(([key, entry]) => [key, entry.component])
 );
 
-export const toolbarEntries = Object.entries(nodeRegistry).map(([key, entry]) => ({
+export const toolbarEntries = Object.entries(NodeRegistry).map(([key, entry]) => ({
   type: key,
   label: entry.label,
   category: entry.category,

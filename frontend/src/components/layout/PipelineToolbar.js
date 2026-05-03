@@ -1,6 +1,6 @@
 import { Flex, Heading } from '@chakra-ui/react';
-import { DraggableNode } from './DraggableNode';
-import { toolbarEntries } from '../nodes/registry';
+import { DraggableNode } from '../controls/DraggableNode';
+import { toolbarEntries } from '../../lib/NodeRegistry';
 import { ValidationStatus } from '../controls/ValidationStatus';
 import { RunButton } from '../controls/RunButton';
 

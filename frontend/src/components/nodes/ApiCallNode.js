@@ -46,7 +46,7 @@ const METHOD_OPTIONS = [
 // Methods that carry a request body
 const HAS_BODY = new Set(['POST', 'PUT', 'PATCH']);
 
-export const APICallNode = ({ id, data, selected }) => {
+export const ApiCallNode = ({ id, data, selected }) => {
   const updateNodeField = useStore((s) => s.updateNodeField);
 
   const method = data?.method ?? 'GET';

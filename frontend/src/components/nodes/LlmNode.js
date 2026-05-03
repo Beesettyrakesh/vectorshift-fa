@@ -39,7 +39,7 @@ const MODEL_OPTIONS = [
 
 const DEFAULT_MODEL = 'gpt-4o';
 
-export const LLMNode = ({ id, data, selected }) => {
+export const LlmNode = ({ id, data, selected }) => {
   const updateNodeField = useStore((s) => s.updateNodeField);
 
   const model        = data?.model        ?? DEFAULT_MODEL;

@@ -4,7 +4,7 @@ import { useShallow } from 'zustand/react/shallow';
 import { Box } from '@chakra-ui/react';
 
 import { useStore } from '../../store/index';
-import { nodeTypes } from '../nodes/registry';
+import { nodeTypes } from '../../lib/NodeRegistry';
 
 import 'reactflow/dist/style.css';
 
