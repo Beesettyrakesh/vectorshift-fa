@@ -52,14 +52,11 @@ export const useStore = create((set, get) => ({
           id: `auto__${sourceId}__${r.sourceVarName}__${nodeId}__${fieldKey}`,
           source: sourceId,
           target: nodeId,
-          // Each auto-edge gets a unique targetHandle "nodeId-auto-sourceId" so
-          // ReactFlow renders them at distinct positions on the target node's left
-          // side. BaseNode dynamically renders a matching <Handle type="target">
-          // for each unique incoming source. sourceHandle/targetHandle are stripped
-          // by buildPayload() before sending to the backend, so no logic impact.
-          // All auto-edges into this node share one fixed handle so only
-          // a single input handle dot is rendered regardless of how many
-          // upstream nodes are referenced via {{node.var}} chips.
+          // All auto-edges into this node share one fixed targetHandle "${nodeId}-auto-in"
+          // so only a single input handle dot is rendered on the left side, regardless
+          // of how many upstream {{node.var}} chips reference this node.
+          // sourceHandle/targetHandle are stripped by buildPayload() before sending
+          // to the backend, so there is no impact on pipeline execution logic.
           targetHandle: `${nodeId}-auto-in`,
           type: 'smoothstep',
           _nodeId: nodeId,
