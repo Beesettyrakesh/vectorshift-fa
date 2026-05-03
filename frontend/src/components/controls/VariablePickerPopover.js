@@ -19,8 +19,7 @@ import {
   Badge,
 } from '@chakra-ui/react';
 import { FiChevronRight, FiChevronLeft } from 'react-icons/fi';
-import { buildNamespace } from '../../lib/variableNamespace';
-import { useStore } from '../../store/index';
+import { useNamespace } from '../../lib/useNamespace';
 
 const TYPE_BADGE_COLOR = {
   Text:    { bg: '#dbeafe', color: '#1d4ed8' },
@@ -73,12 +72,11 @@ const NODE_TYPE_LABEL = {
  * @param {React.ReactNode} children  The trigger element
  */
 export const VariablePickerPopover = ({ isOpen, onClose, nodeId, onInsert, children }) => {
-  const nodes = useStore((s) => s.nodes);
   const [stage, setStage] = useState(1);
   const [selectedNodeName, setSelectedNodeName] = useState(null);
 
-  // Only recomputed when nodes array reference changes — not on every local state update
-  const namespace = useMemo(() => buildNamespace(nodes), [nodes]);
+  // Shared hook — avoids calling buildNamespace per-instance
+  const namespace = useNamespace();
 
   // Exclude self — recomputed only when namespace or nodeId changes
   const otherNodes = useMemo(

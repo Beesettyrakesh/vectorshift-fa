@@ -31,7 +31,8 @@ import {
 } from '@chakra-ui/react';
 import { FiLink, FiPlus, FiAlertCircle } from 'react-icons/fi';
 import { VariablePickerPopover } from './VariablePickerPopover';
-import { buildNamespace, validateRef } from '../../lib/variableNamespace';
+import { validateRef } from '../../lib/variableNamespace';
+import { useNamespace } from '../../lib/useNamespace';
 import { useStore } from '../../store/index';
 
 // ── Tokenizer ──────────────────────────────────────────────────────────────
@@ -77,9 +78,8 @@ export const VariableTagInput = ({
   // occurrence is the 1-based index of the clicked chip among duplicates.
   const [replacingRaw, setReplacingRaw] = useState(null);
 
-  // Live namespace for validation
-  const nodes = useStore((s) => s.nodes);
-  const namespace = useMemo(() => buildNamespace(nodes), [nodes]);
+  // Live namespace for validation — shared hook avoids per-field redundant rebuilds
+  const namespace = useNamespace();
 
   const tokens = useMemo(() => tokenize(value ?? ''), [value]);
 
