@@ -206,11 +206,12 @@ export function cascadeRename(nodes, oldName, newName) {
 
   const VAR_AWARE_FIELDS = {
     llm: ['systemPrompt', 'prompt'],
-    filter: ['list', 'filterVal'],       // filterVal is the actual key in Filter.js
-    transform: ['input', 'expression'],  // expression is the actual key in Transform.js
+    filter: ['list', 'filterVal'],       // filterVal is the actual key in FilterNode.js
+    transform: ['input', 'expression'],  // expression is the actual key in TransformNode.js
     apiCall: ['url', 'body'],
-    conditional: ['input', 'value'],     // input + value are the actual keys in Conditional.js
+    conditional: ['input', 'value'],     // input + value are the actual keys in ConditionalNode.js
     text: ['text'],
+    customOutput: ['filename'],          // filename shown when outputType === 'File'
   };
 
   return nodes.map((node) => {

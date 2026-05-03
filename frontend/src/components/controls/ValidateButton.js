@@ -14,6 +14,7 @@ import {
   useDisclosure,
 } from '@chakra-ui/react';
 import { useShallow } from 'zustand/react/shallow';
+// Renamed from RunButton — button label changed from "Run" to "Validate"
 import { useStore } from '../../store/index';
 import { runAutoValidate, clearCycleHighlight, getAutoValidateStatus } from '../../lib/validatePipeline';
 
@@ -29,7 +30,7 @@ const selector = (s) => ({
   autoEdges: s.autoEdges ?? [],
 });
 
-export const RunButton = () => {
+export const ValidateButton = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [result, setResult] = useState(null);
   const { isOpen, onOpen, onClose } = useDisclosure();
@@ -95,11 +96,11 @@ export const RunButton = () => {
         onClick={onRun}
         isLoading={isLoading}
         isDisabled={!canRun}
-        loadingText="Running…"
+        loadingText="Validating…"
         minW="80px"
         title={disabledTitle}
       >
-        Run
+        Validate
       </Button>
 
       <Modal isOpen={isOpen} onClose={onClose} isCentered size="sm">

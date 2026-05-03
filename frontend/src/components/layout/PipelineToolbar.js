@@ -2,7 +2,7 @@ import { Flex, Heading } from '@chakra-ui/react';
 import { DraggableNode } from '../controls/DraggableNode';
 import { toolbarEntries } from '../../lib/NodeRegistry';
 import { ValidationStatus } from '../controls/ValidationStatus';
-import { RunButton } from '../controls/RunButton';
+import { ValidateButton } from '../controls/ValidateButton';
 
 export const PipelineToolbar = () => (
   <Flex
@@ -40,7 +40,7 @@ export const PipelineToolbar = () => (
     </Flex>
     <Flex align="center" gap={3} flexShrink={0}>
       <ValidationStatus />
-      <RunButton />
+      <ValidateButton />
     </Flex>
   </Flex>
 );
