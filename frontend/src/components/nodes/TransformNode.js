@@ -96,7 +96,7 @@ export const TransformNode = ({ id, data, selected }) => {
           >
             {TRANSFORM_OPTIONS.map((opt, i) =>
               opt.disabled ? (
-                <option key={i} value="" disabled style={{ color: '#999', fontStyle: 'italic' }}>
+                <option key={`group-${opt.label}`} value="" disabled style={{ color: '#999', fontStyle: 'italic' }}>
                   {opt.label}
                 </option>
               ) : (
