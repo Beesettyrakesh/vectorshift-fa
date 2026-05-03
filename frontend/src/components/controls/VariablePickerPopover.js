@@ -6,7 +6,7 @@
 // Stage 2: list output variables of the selected node with type badges.
 // Selecting a variable calls onInsert('{{nodeName.varName}}').
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import {
   Popover,
   PopoverTrigger,
@@ -77,10 +77,13 @@ export const VariablePickerPopover = ({ isOpen, onClose, nodeId, onInsert, child
   const [stage, setStage] = useState(1);
   const [selectedNodeName, setSelectedNodeName] = useState(null);
 
-  const namespace = buildNamespace(nodes);
-  // Exclude self
-  const otherNodes = Object.entries(namespace).filter(
-    ([, entry]) => entry.nodeId !== nodeId
+  // Only recomputed when nodes array reference changes — not on every local state update
+  const namespace = useMemo(() => buildNamespace(nodes), [nodes]);
+
+  // Exclude self — recomputed only when namespace or nodeId changes
+  const otherNodes = useMemo(
+    () => Object.entries(namespace).filter(([, entry]) => entry.nodeId !== nodeId),
+    [namespace, nodeId]
   );
 
   const handleNodeSelect = useCallback((nodeName) => {

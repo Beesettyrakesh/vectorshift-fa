@@ -107,3 +107,6 @@ src/
 ├── styles/index.css            ReactFlow handle + edge overrides
 └── theme/index.js              Chakra UI design tokens
 ```
+
+1. rename the "passed" output variable to "list"
+2. Rename run to validate

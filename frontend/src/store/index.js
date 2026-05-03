@@ -84,6 +84,11 @@ export const useStore = create((set, get) => ({
     });
   },
   clearCycleHighlight: () => {
+    // Guard: skip the set() call if both sets are already empty.
+    // Creating new Set() objects every call triggers Zustand's shallow-equality
+    // check to always fire, causing Canvas styledEdges to recompute unnecessarily.
+    const s = get();
+    if (s.cycleNodeIds.size === 0 && s.cycleEdgeKeys.size === 0) return;
     set({ cycleNodeIds: new Set(), cycleEdgeKeys: new Set() });
   },
 

@@ -73,6 +73,8 @@ export const VariableTagInput = ({
 }) => {
   const textareaRef = useRef(null);
   const [pickerOpen, setPickerOpen] = useState(false);
+  // replacingRaw: { raw, occurrence } — raw is the matched string,
+  // occurrence is the 1-based index of the clicked chip among duplicates.
   const [replacingRaw, setReplacingRaw] = useState(null);
 
   // Live namespace for validation
@@ -131,10 +133,17 @@ export const VariableTagInput = ({
   );
 
   // ── Click chip label → replace mode ──────────────────────────────────────
-  const handleChipClick = useCallback((raw) => {
-    setReplacingRaw(raw);
+  // tokenIndex is the position of this chip in the tokens array so we can
+  // calculate which occurrence (1st, 2nd, …) of `raw` was clicked.
+  const handleChipClick = useCallback((raw, tokenIndex) => {
+    // Count how many previous tokens have the same raw string — that gives us
+    // the 0-based position; +1 makes it 1-based.
+    const occurrence = tokens
+      .slice(0, tokenIndex)
+      .filter((t) => t.kind === 'ref' && t.raw === raw).length + 1;
+    setReplacingRaw({ raw, occurrence });
     setPickerOpen(true);
-  }, []);
+  }, [tokens]);
 
   const handlePickerClose = useCallback(() => {
     setPickerOpen(false);
@@ -145,7 +154,19 @@ export const VariableTagInput = ({
   const handleInsert = useCallback(
     (text) => {
       if (replacingRaw) {
-        onChange((value ?? '').replace(replacingRaw, text));
+        // Index-based replacement: only replace the nth occurrence of `raw`.
+        // replaceAll() was wrong — it would change ALL duplicate chips at once.
+        // String.replace() without /g was wrong — it always changes the first.
+        // We need to replace exactly the occurrence the user clicked.
+        const { raw, occurrence } = replacingRaw;
+        const escaped = raw.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        let count = 0;
+        onChange(
+          (value ?? '').replace(new RegExp(escaped, 'g'), (match) => {
+            count++;
+            return count === occurrence ? text : match;
+          })
+        );
       } else {
         const el = textareaRef.current;
         const tail = editableTail;
@@ -240,7 +261,7 @@ export const VariableTagInput = ({
                       color={isValid ? 'purple.700' : 'red.600'}
                       cursor="pointer"
                       _hover={{ textDecoration: 'underline' }}
-                      onClick={(e) => { e.stopPropagation(); handleChipClick(token.raw); }}
+                      onClick={(e) => { e.stopPropagation(); handleChipClick(token.raw, i); }}
                       title={isValid ? 'Click to change variable' : 'Invalid reference — click to fix'}
                     >
                       {token.nodeName}.{token.varName}

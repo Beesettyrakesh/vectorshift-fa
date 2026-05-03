@@ -15,7 +15,7 @@ import {
 } from '@chakra-ui/react';
 import { shallow } from 'zustand/shallow';
 import { useStore } from '../../store/index';
-import { runAutoValidate, clearCycleHighlight, getAutoValidateStatus, dedupeEdges } from '../../lib/validatePipeline';
+import { runAutoValidate, clearCycleHighlight, getAutoValidateStatus } from '../../lib/validatePipeline';
 
 const STATUS_COLOR = {
   success: 'green.400',
@@ -48,22 +48,21 @@ export const RunButton = () => {
   const onRun = async () => {
     setIsLoading(true);
     try {
-      // runAutoValidate reads store.edges + store.autoEdges internally
-      // and also updates the status chip
-      await runAutoValidate();
+      // runAutoValidate reads store.edges + store.autoEdges, deduplicates, sends
+      // to backend, and now returns the parsed response (num_nodes, num_edges, is_dag).
+      // Using backend counts is authoritative — avoids any client-side double-counting
+      // of auto-edges that share the same source→target as a real edge.
+      const data = await runAutoValidate();
       const status = getAutoValidateStatus();
       const isDAG = status === 'dag';
-      const state = useStore.getState();
-      // Deduplicate so manual + auto edges between the same pair count as one
-      const allEdges = dedupeEdges([...state.edges, ...(state.autoEdges ?? [])]);
       setResult({
         title: isDAG ? 'Pipeline Parsed' : status === 'error' ? 'Run Failed' : 'Cycle Detected',
         status: isDAG ? 'success' : status === 'error' ? 'error' : 'warning',
         lines:
-          status !== 'error'
+          data != null
             ? [
-                `Nodes: ${state.nodes.length}`,
-                `Edges: ${allEdges.length}`,
+                `Nodes: ${data.num_nodes}`,
+                `Edges: ${data.num_edges}`,
                 `Is DAG: ${isDAG ? 'Yes' : 'No'}`,
               ]
             : ['Could not reach the backend.'],

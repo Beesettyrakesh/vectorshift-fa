@@ -77,14 +77,19 @@ const _runAutoValidate = async () => {
   if (state.nodes.length === 0 || allEdges.length === 0) {
     clearCycleHighlight();
     _setStatus('idle');
-    return;
+    return null;
   }
   _setStatus('validating');
   try {
     const data = await validatePipeline(state.nodes, allEdges);
     _setStatus(data.is_dag ? 'dag' : 'cycle');
+    // Return the parsed response so callers (e.g. RunButton) can use
+    // the backend's authoritative num_nodes/num_edges counts directly
+    // instead of counting client-side (which can double-count auto-edges).
+    return data;
   } catch (e) {
     _setStatus('error');
+    return null;
   }
 };
 

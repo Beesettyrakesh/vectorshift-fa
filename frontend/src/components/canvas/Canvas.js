@@ -16,8 +16,8 @@ const selector = (state) => ({
   edges: state.edges,
   autoEdges: state.autoEdges,
   cycleEdgeKeys: state.cycleEdgeKeys,
-  getNodeID: state.getNodeID,
-  addNode: state.addNode,
+  // getNodeID and addNode are accessed via useStore.getState() inside onDrop
+  // to avoid stale closure — no need to subscribe to them here.
   onNodesChange: state.onNodesChange,
   onEdgesChange: state.onEdgesChange,
   onConnect: state.onConnect,
@@ -33,8 +33,6 @@ export const PipelineUI = () => {
     edges,
     autoEdges,
     cycleEdgeKeys,
-    getNodeID,
-    addNode,
     onNodesChange,
     onEdgesChange,
     onConnect,
