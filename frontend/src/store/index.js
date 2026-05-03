@@ -79,10 +79,19 @@ export const useStore = create((set, get) => ({
   cycleNodeIds: new Set(),
   cycleEdgeKeys: new Set(),
   setCycleHighlight: (nodeIds, edgeKeys) => {
-    set({
-      cycleNodeIds: toSet(nodeIds),
-      cycleEdgeKeys: toSet(edgeKeys),
-    });
+    const nextNodeIds = toSet(nodeIds);
+    const nextEdgeKeys = toSet(edgeKeys);
+    const s = get();
+    // Guard: skip set() if content is identical to current state.
+    // Without this, every validation call (every 300ms) creates new Set objects
+    // → triggers all BaseNode cycleNodeIds.has(id) selectors unnecessarily.
+    // Same pattern as clearCycleHighlight below.
+    if (
+      nextNodeIds.size === s.cycleNodeIds.size &&
+      nextEdgeKeys.size === s.cycleEdgeKeys.size &&
+      [...nextNodeIds].every((id) => s.cycleNodeIds.has(id))
+    ) return;
+    set({ cycleNodeIds: nextNodeIds, cycleEdgeKeys: nextEdgeKeys });
   },
   clearCycleHighlight: () => {
     // Guard: skip the set() call if both sets are already empty.
