@@ -15,7 +15,7 @@
 //     because the source node's type changed) render in red with an error message
 //     below the field: "Select a compatible output field for nodeName.varName"
 
-import { useRef, useState, useCallback, useMemo } from 'react';
+import { useRef, useState, useCallback, useMemo, useEffect } from 'react';
 import {
   Box,
   Flex,
@@ -82,14 +82,15 @@ export const VariableTagInput = ({
 
   const tokens = useMemo(() => tokenize(value ?? ''), [value]);
 
-  // Push valid refs as auto-edges whenever tokens change
-  useMemo(() => {
+  // Push valid refs as auto-edges whenever tokens change.
+  // useEffect (not useMemo) because this is a side effect, not a derived value.
+  // useMemo can be skipped/deduped by React and must not contain side effects.
+  useEffect(() => {
     const validRefs = tokens
       .filter((t) => t.kind === 'ref' && validateRef(namespace, t.nodeName, t.varName))
       .map((t) => ({ sourceNodeName: t.nodeName, sourceVarName: t.varName }));
     setAutoEdges(nodeId, fieldKey, validRefs);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [tokens, namespace, nodeId, fieldKey]);
+  }, [tokens, namespace, nodeId, fieldKey, setAutoEdges]);
 
   const lastRefIndex = useMemo(() => {
     let idx = -1;

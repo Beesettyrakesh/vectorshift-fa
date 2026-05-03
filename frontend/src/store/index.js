@@ -53,7 +53,9 @@ export const useStore = create((set, get) => ({
           source: sourceId,
           target: nodeId,
           sourceHandle: `${sourceId}-${r.sourceVarName}`,
-          targetHandle: `${nodeId}-input`,
+          // No targetHandle — each auto-edge from a different source must use a
+          // unique handle or no handle at all; sharing "${nodeId}-input" causes
+          // ReactFlow to render only the first edge (silent dedup by handle key).
           type: 'smoothstep',
           _nodeId: nodeId,
           _fieldKey: fieldKey,

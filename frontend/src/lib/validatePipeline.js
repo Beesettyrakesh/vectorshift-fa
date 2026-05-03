@@ -6,6 +6,18 @@ import { useStore } from '../store/index';
 
 export const PARSE_URL = 'http://localhost:8000/pipelines/parse';
 
+// Deduplicate edges by source→target pair so a manual edge + auto-edge
+// between the same two nodes are counted as one.
+export const dedupeEdges = (edges) => {
+  const seen = new Set();
+  return edges.filter((e) => {
+    const key = `${e.source}>${e.target}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+};
+
 export const buildPayload = (nodes, edges) => ({
   nodes: nodes.map((n) => ({ id: n.id, type: n.type, data: n.data })),
   edges: edges.map((e) => ({ source: e.source, target: e.target })),
@@ -58,8 +70,9 @@ const _setStatus = (next) => {
 
 const _runAutoValidate = async () => {
   const state = useStore.getState();
-  // Merge autoEdges so cycle detection sees variable-reference dependencies too
-  const allEdges = [...state.edges, ...(state.autoEdges ?? [])];
+  // Merge autoEdges so cycle detection sees variable-reference dependencies too.
+  // Deduplicate so a manual A→B + auto-edge A→B count as one edge.
+  const allEdges = dedupeEdges([...state.edges, ...(state.autoEdges ?? [])]);
   // Idle when canvas is empty OR nodes exist but nothing is connected yet
   if (state.nodes.length === 0 || allEdges.length === 0) {
     clearCycleHighlight();

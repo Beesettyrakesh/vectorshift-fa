@@ -15,7 +15,7 @@ import {
 } from '@chakra-ui/react';
 import { shallow } from 'zustand/shallow';
 import { useStore } from '../../store/index';
-import { runAutoValidate, clearCycleHighlight, getAutoValidateStatus } from '../../lib/validatePipeline';
+import { runAutoValidate, clearCycleHighlight, getAutoValidateStatus, dedupeEdges } from '../../lib/validatePipeline';
 
 const STATUS_COLOR = {
   success: 'green.400',
@@ -54,7 +54,8 @@ export const RunButton = () => {
       const status = getAutoValidateStatus();
       const isDAG = status === 'dag';
       const state = useStore.getState();
-      const allEdges = [...state.edges, ...(state.autoEdges ?? [])];
+      // Deduplicate so manual + auto edges between the same pair count as one
+      const allEdges = dedupeEdges([...state.edges, ...(state.autoEdges ?? [])]);
       setResult({
         title: isDAG ? 'Pipeline Parsed' : status === 'error' ? 'Run Failed' : 'Cycle Detected',
         status: isDAG ? 'success' : status === 'error' ? 'error' : 'warning',
