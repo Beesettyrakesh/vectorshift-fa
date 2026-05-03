@@ -79,7 +79,6 @@ export const VariableTagInput = ({
 
   // Live namespace for validation
   const nodes = useStore((s) => s.nodes);
-  const setAutoEdges = useStore((s) => s.setAutoEdges);
   const namespace = useMemo(() => buildNamespace(nodes), [nodes]);
 
   const tokens = useMemo(() => tokenize(value ?? ''), [value]);
@@ -87,12 +86,19 @@ export const VariableTagInput = ({
   // Push valid refs as auto-edges whenever tokens change.
   // useEffect (not useMemo) because this is a side effect, not a derived value.
   // useMemo can be skipped/deduped by React and must not contain side effects.
+  //
+  // ⚠ We use useStore.getState().setAutoEdges() instead of subscribing via
+  // useStore((s) => s.setAutoEdges). Subscribing to an action via the hook
+  // causes the action itself to appear in the useEffect deps array; calling
+  // setAutoEdges updates the store → notifies all subscribers → re-renders
+  // this component → useEffect fires again → infinite loop.
+  // getState() is synchronous and never triggers a re-render subscription.
   useEffect(() => {
     const validRefs = tokens
       .filter((t) => t.kind === 'ref' && validateRef(namespace, t.nodeName, t.varName))
       .map((t) => ({ sourceNodeName: t.nodeName, sourceVarName: t.varName }));
-    setAutoEdges(nodeId, fieldKey, validRefs);
-  }, [tokens, namespace, nodeId, fieldKey, setAutoEdges]);
+    useStore.getState().setAutoEdges(nodeId, fieldKey, validRefs);
+  }, [tokens, namespace, nodeId, fieldKey]);
 
   const lastRefIndex = useMemo(() => {
     let idx = -1;
